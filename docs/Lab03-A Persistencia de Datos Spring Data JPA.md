@@ -1,5 +1,5 @@
 # Guía de Laboratorio 03 - A
-## Persistencia con Spring Data JPA
+## Persistencia de Datos con Spring Data JPA
 **1ACC0236 Ingeniería de Software | Escuela CC | Ciclo 2026-1**
 Elaborado por: Henry Antonio Mendoza Puerta
 
