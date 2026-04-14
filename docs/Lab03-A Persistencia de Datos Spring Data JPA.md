@@ -509,7 +509,7 @@ public class Purchase {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PurchaseStatus status = PurchaseStatus.PENDING;
+    private PurchaseStatus status;
 
     @Column(length = 300)
     private String shippingAddress;
@@ -521,7 +521,7 @@ public class Purchase {
     @OneToMany(mappedBy = "purchase",
                cascade = CascadeType.ALL,
                orphanRemoval = true)
-    private List<PurchaseItem> items = new ArrayList<>();
+    private List<PurchaseItem> items;
 
     @PrePersist
     protected void onCreate() { this.purchaseDate = LocalDateTime.now(); }
@@ -726,6 +726,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 @SpringBootApplication
 public class BookstoreApiApplication {
@@ -798,6 +799,7 @@ public class BookstoreApiApplication {
                     .status(PurchaseStatus.PENDING)
                     .shippingAddress("Av. Larco 123, Miraflores")
                     .build();
+            compra.setItems(new ArrayList<>());
             compra.getItems().add(item);
             item.setPurchase(compra);
             purchaseRepo.save(compra);
