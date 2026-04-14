@@ -1,5 +1,5 @@
 # Guía de Laboratorio 03 - A
-## Persistencia de Datos con Spring Data JPA
+## Persistencia con Spring Data JPA
 **1ACC0236 Ingeniería de Software | Escuela CC | Ciclo 2026-1**
 Elaborado por: Henry Antonio Mendoza Puerta
 
@@ -632,6 +632,19 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BookRepository extends JpaRepository<Book, Long> {
+
+    // ── Lab 02 — métodos existentes, se mantienen ─────────────────────────────
+    List<Book> findByTitle(String title);
+    Optional<Book> findBySlug(String slug);
+    boolean existsBySlug(String slug);
+
+    @Query("SELECT b FROM Book b WHERE b.stock < b.minStock")
+    List<Book> findLowStockBooks();
+
+    @Query(value = "SELECT * FROM books WHERE price > 50", nativeQuery = true)
+    List<Book> findExpensiveBooks();
+
+    // ── Lab 03 — métodos nuevos ───────────────────────────────────────────────
 
     // Retorna libro por ISBN — valida unicidad al registrar (US-02)
     Optional<Book> findByIsbn(String isbn);
