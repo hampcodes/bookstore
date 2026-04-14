@@ -450,7 +450,7 @@ public class Book {
     private Integer stock;
 
     @Column(nullable = false)
-    private Integer minStock = 5;
+    private Integer minStock;
 
     @Column(length = 2000)
     private String description;
@@ -736,10 +736,10 @@ public class BookstoreApiApplication {
 
     @Bean
     CommandLineRunner initData(RoleRepository roleRepo,
-                              UserRepository userRepo,
-                              AuthorRepository authorRepo,
-                              BookRepository bookRepo,
-                              PurchaseRepository purchaseRepo) {
+                               UserRepository userRepo,
+                               AuthorRepository authorRepo,
+                               BookRepository bookRepo,
+                               PurchaseRepository purchaseRepo) {
         return args -> {
 
             // 1. Roles
@@ -748,65 +748,80 @@ public class BookstoreApiApplication {
 
             // 2. Usuarios
             User pedro = userRepo.save(User.builder()
-                .email("pedro@libreria.com").password("pass")
-                .firstName("Pedro").lastName("Ramirez").role(owner).build());
+                    .email("pedro@libreria.com").password("pass")
+                    .firstName("Pedro").lastName("Ramirez")
+                    .isVerified(false)
+                    .role(owner).build());
             User sofia = userRepo.save(User.builder()
-                .email("sofia@correo.com").password("pass")
-                .firstName("Sofia").lastName("Torres").role(reader).build());
+                    .email("sofia@correo.com").password("pass")
+                    .firstName("Sofia").lastName("Torres")
+                    .isVerified(false)
+                    .role(reader).build());
 
             // 3. Autor (US-01)
             Author vargas = authorRepo.save(Author.builder()
-                .firstName("Mario").lastName("Vargas Llosa")
-                .nationality("Peruana").build());
+                    .firstName("Mario").lastName("Vargas Llosa")
+                    .nationality("Peruana").build());
 
             // 4. Libros (US-02)
             Book libro1 = bookRepo.save(Book.builder()
-                .title("La ciudad y los perros")
-                .isbn("9780374529529")
-                .genre("FICTION")
-                .price(new BigDecimal("45.00"))
-                .stock(10).author(vargas).build());
+                    .title("La ciudad y los perros")
+                    .isbn("9780374529529")
+                    .genre("FICTION")
+                    .price(new BigDecimal("45.00"))
+                    .stock(10)
+                    .minStock(5)
+                    .isActive(true)
+                    .slug("la-ciudad-y-los-perros")
+                    .author(vargas).build());
 
             Book libro2 = bookRepo.save(Book.builder()
-                .title("Cosmos")
-                .isbn("9780345539434")
-                .genre("SCIENCE")
-                .price(new BigDecimal("55.00"))
-                .stock(3).author(vargas).build());
+                    .title("Cosmos")
+                    .isbn("9780345539434")
+                    .genre("SCIENCE")
+                    .price(new BigDecimal("55.00"))
+                    .stock(3)
+                    .minStock(5)
+                    .isActive(true)
+                    .slug("cosmos")
+                    .author(vargas).build());
 
             // 5. Compra con items (US-04)
             PurchaseItem item = PurchaseItem.builder()
-                .book(libro1).quantity(2)
-                .unitPrice(libro1.getPrice())
-                .subtotal(libro1.getPrice().multiply(new BigDecimal("2")))
-                .build();
+                    .book(libro1).quantity(2)
+                    .unitPrice(libro1.getPrice())
+                    .subtotal(libro1.getPrice().multiply(new BigDecimal("2")))
+                    .build();
             Purchase compra = Purchase.builder()
-                .user(sofia).totalAmount(item.getSubtotal())
-                .shippingAddress("Av. Larco 123, Miraflores").build();
+                    .user(sofia)
+                    .totalAmount(item.getSubtotal())
+                    .status(PurchaseStatus.PENDING)
+                    .shippingAddress("Av. Larco 123, Miraflores")
+                    .build();
             compra.getItems().add(item);
             item.setPurchase(compra);
             purchaseRepo.save(compra);
 
-            // ── Query Method (US-03) ───────────────────────────────
+            // ── Query Method (US-03) ──────────────────────────────────────────
             System.out.println("\n=== Query Method — libros FICTION ===");
             bookRepo.findByGenreAndIsActiveTrue("FICTION")
-                .forEach(b -> System.out.println("  " + b.getTitle()));
+                    .forEach(b -> System.out.println("  " + b.getTitle()));
 
-            // ── JPQL (US-03) ──────────────────────────────────────
+            // ── JPQL (US-03) ──────────────────────────────────────────────────
             System.out.println("\n=== JPQL — FICTION <= S/50 ===");
             bookRepo.findByGenreAndMaxPrice("FICTION", new BigDecimal("50"))
-                .forEach(b -> System.out.println("  " + b.getTitle() + " S/" + b.getPrice()));
+                    .forEach(b -> System.out.println("  " + b.getTitle() + " S/" + b.getPrice()));
 
-            // ── JPQL con fechas (US-05) ───────────────────────────
+            // ── JPQL con fechas (US-05) ───────────────────────────────────────
             System.out.println("\n=== JPQL — compras de sofia hoy ===");
             purchaseRepo.findByUserAndDateRange(
-                sofia.getId(),
-                LocalDateTime.now().minusDays(1),
-                LocalDateTime.now().plusDays(1))
-                .forEach(p -> System.out.println("  Compra #" + p.getId()
-                    + " S/" + p.getTotalAmount()));
+                    sofia.getId(),
+                    LocalDateTime.now().minusDays(1),
+                    LocalDateTime.now().plusDays(1))
+                    .forEach(p -> System.out.println("  Compra #" + p.getId()
+                            + " S/" + p.getTotalAmount()));
 
-            // ── SQL nativo (US-05) ────────────────────────────────
+            // ── SQL nativo (US-05) ────────────────────────────────────────────
             System.out.println("\n=== SQL Nativo — total gastado sofia ===");
             System.out.println("  S/" + purchaseRepo.getTotalSpentByUser(sofia.getId()));
             System.out.println("  (status PENDING, no DELIVERED — resultado: 0)");
