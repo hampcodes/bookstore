@@ -1,23 +1,39 @@
 # Guía de Laboratorio 03 - A
-## Persistencia con Spring Data JPA
+## Persistencia de Datos con Spring Data JPA
 **1ACC0236 Ingeniería de Software | Escuela CC | Ciclo 2026-1**
 Elaborado por: Henry Antonio Mendoza Puerta
 
 ---
 
-## 1. Persistencia con JPA, Hibernate y Spring Data JPA
+## 1. Objetivo
 
-Para que los datos de una aplicación Java sobrevivan al cierre del programa, deben guardarse en una base de datos. JPA define las reglas de cómo hacerlo. Hibernate las ejecuta. Spring Data JPA simplifica el acceso.
+Al finalizar el laboratorio, el estudiante implementa entidades JPA con asociaciones sobre el dominio BookStore, define repositorios con los tres tipos de consulta (Query Method, JPQL y SQL nativo) y verifica la persistencia ejecutando un test desde el método main.
+
+---
+
+## 2. Persistencia de Datos con JPA, Hibernate y Spring Data JPA
+
+Cuando una aplicación Java se detiene, todos los objetos en memoria desaparecen. Para que los datos sobrevivan deben guardarse en una base de datos. El problema es que Java trabaja con objetos y las bases de datos con tablas. A ese problema se le llama **desfase objeto-relacional** y JPA es la solución.
+
+**JPA** define cómo mapear clases Java a tablas. **Hibernate** ejecuta ese mapeo. **Spring Data JPA** elimina el código repetitivo.
+
+### 2.1 ORM — Cómo se mapea un objeto a una tabla
+
+Cada clase Java se convierte en una tabla, cada atributo en una columna y cada objeto en una fila.
 
 ```
-Tu código Java
-   └─ llama a  BookRepository.save(book)          ← Spring Data JPA
-         └─ delega en  EntityManager.persist()    ← JPA (especificación)
-               └─ ejecuta  INSERT INTO books ...  ← Hibernate (implementación)
-                     └─ escribe en  PostgreSQL    ← Base de datos
+CLASE JAVA                        TABLA PostgreSQL
+──────────────────────────        ──────────────────────────────
+@Entity                     →     CREATE TABLE books (
+class Book {                            id        BIGSERIAL PRIMARY KEY,
+  Long id;                →             title     VARCHAR(200) NOT NULL,
+  String title;           →             price     DECIMAL(10,2) NOT NULL,
+  BigDecimal price;       →             author_id BIGINT REFERENCES authors(id)
+  Author author;          →       );
+}
 ```
 
-### 1.1 Anotaciones JPA — Referencia
+### 2.2 Anotaciones JPA — Referencia
 
 | Anotación | Propósito |
 |---|---|
@@ -31,14 +47,8 @@ Tu código Java
 | `@JoinColumn(name=)` | Nombre de la columna de clave foránea en la tabla. |
 | `cascade = CascadeType.ALL` | Las operaciones (persist, remove) se propagan a los hijos. |
 | `orphanRemoval = true` | Elimina automáticamente los hijos que quedan sin padre. |
-| `FetchType.LAZY` | Carga la relación solo cuando se accede. |
+| `FetchType.LAZY` | Carga la relación solo cuando se accede, evitando consultas innecesarias. |
 | `@PrePersist` | Ejecuta un método justo antes de insertar el registro en la BD. |
-
----
-
-## 2. Objetivo
-
-Al finalizar el laboratorio, el estudiante implementa entidades JPA con asociaciones sobre el dominio BookStore, define repositorios con los tres tipos de consulta (Query Method, JPQL y SQL nativo) y verifica la persistencia ejecutando un test desde el método main.
 
 ---
 
@@ -104,6 +114,65 @@ COMO lector QUIERO consultar mis compras filtrando por fecha de inicio y fin PAR
 ---
 
 ## 4. Diagrama de Clases del Dominio
+
+```mermaid
+classDiagram
+    direction LR
+
+    namespace Catalog {
+        class Author {
+            +Long id
+            +String firstName
+            +String lastName
+            +String nationality
+        }
+        class Book {
+            +Long id
+            +String title
+            +String isbn
+            +String genre
+            +BigDecimal price
+            +Integer stock
+            +Integer minStock
+            +boolean isActive
+            +LocalDateTime createdAt
+        }
+    }
+
+    namespace Customers {
+        class Customer {
+            +Long id
+            +String firstName
+            +String lastName
+            +String phone
+            +String address
+            +LocalDateTime createdAt
+        }
+    }
+
+    namespace Purchasing {
+        class Purchase {
+            +Long id
+            +LocalDateTime purchaseDate
+            +BigDecimal totalAmount
+            +PurchaseStatus status
+            +String shippingAddress
+        }
+        class PurchaseItem {
+            +Long id
+            +Integer quantity
+            +BigDecimal unitPrice
+            +BigDecimal subtotal
+        }
+    }
+
+    Purchase    "*"  --> "1"  Customer     : pertenece a
+    PurchaseItem "*" --> "1"  Book         : referencia
+    Author      "1"  o--> "*" Book         : escribe
+    Purchase    "1"  *--> "*" PurchaseItem : contiene
+```
+
+### Relaciones y anotaciones JPA correspondientes
 
 | Clase | Relación UML | Con | Tipo | Por qué |
 |---|---|---|---|---|
@@ -647,11 +716,129 @@ public class BookstoreApiApplication {
 
 ## 13. Publicar en GitHub
 
+### 13.1 Crear repositorio en GitHub
+
+1. Ingresar a https://github.com y crear un repositorio nuevo con nombre `bookstore-api`
+2. Dejarlo en Public, sin inicializar (sin README ni .gitignore)
+3. Copiar la URL: `https://github.com/usuario/bookstore-api.git`
+
+### 13.2 Vincular el proyecto local
+
+```bash
+git init
+git remote add origin https://github.com/usuario/bookstore-api.git
+```
+
+### 13.3 Crear rama develop y subir
+
+```bash
+git checkout -b develop
+git add .
+git commit -m "chore: proyecto base bookstore api"
+git push -u origin develop
+```
+
+### 13.4 Crear rama feature para este lab
+
 ```bash
 git checkout -b feature/jpa-entities
+```
+
+### 13.5 Hacer commit con los cambios del lab
+
+```bash
 git add .
 git commit -m "feat: implementar entidades JPA y repositorios"
 git push -u origin feature/jpa-entities
 ```
 
-**PR:** `base: develop ← compare: feature/jpa-entities`
+### 13.6 Crear el Pull Request
+
+1. Ir al repositorio en GitHub
+2. GitHub mostrará el banner **"Compare & pull request"** — hacer clic
+3. Configurar: `base: develop ← compare: feature/jpa-entities`
+4. Completar el formulario y hacer clic en **Create pull request**
+
+### 13.7 Ejemplo de Pull Request
+
+**Título:**
+```
+feat: implementar entidades JPA y repositorios — Lab 03
+```
+
+**Descripción:**
+```markdown
+## ¿Qué incluye este PR?
+- Entidades JPA: Customer, Author, Purchase, PurchaseItem
+- Book.java refactorizado: author pasa de String a @ManyToOne Author
+- Repositorios con Query Method, JPQL y SQL nativo
+- Test verificado en consola (captura adjunta)
+
+## User Stories cubiertas
+US-01 Registrar autor, US-02 Registrar libro, US-03 Buscar por género y precio,
+US-04 Registrar compra, US-05 Consultar historial por fechas
+
+## Evidencia
+[Adjuntar screenshot de la consola y de pgAdmin]
+```
+
+**Reviewers:** Asignar a otro integrante del equipo para revisión
+## 14. Diagrama de Base de Datos
+
+```mermaid
+erDiagram
+
+    customers {
+        BIGSERIAL   id          PK
+        VARCHAR100  first_name  "NOT NULL"
+        VARCHAR100  last_name   "NOT NULL"
+        VARCHAR20   phone
+        VARCHAR300  address
+        TIMESTAMP   created_at
+    }
+
+    authors {
+        BIGSERIAL   id          PK
+        VARCHAR100  first_name  "NOT NULL"
+        VARCHAR100  last_name   "NOT NULL"
+        VARCHAR80   nationality
+    }
+
+    books {
+        BIGSERIAL   id          PK
+        VARCHAR200  title       "NOT NULL"
+        VARCHAR13   isbn        "NOT NULL, UNIQUE"
+        VARCHAR100  genre
+        DECIMAL     price       "NOT NULL"
+        INTEGER     stock       "NOT NULL"
+        INTEGER     min_stock   "NOT NULL"
+        BOOLEAN     is_active   "NOT NULL"
+        TIMESTAMP   created_at
+        BIGINT      author_id   FK
+    }
+
+    purchases {
+        BIGSERIAL   id               PK
+        TIMESTAMP   purchase_date
+        DECIMAL     total_amount     "NOT NULL"
+        VARCHAR20   status           "NOT NULL"
+        VARCHAR300  shipping_address
+        BIGINT      customer_id      FK
+    }
+
+    purchase_items {
+        BIGSERIAL   id          PK
+        INTEGER     quantity    "NOT NULL"
+        DECIMAL     unit_price  "NOT NULL"
+        DECIMAL     subtotal    "NOT NULL"
+        BIGINT      purchase_id FK
+        BIGINT      book_id     FK
+    }
+
+    customers      ||--o{ purchases      : "realiza"
+    authors        ||--o{ books          : "escribe"
+    purchases      ||--|{ purchase_items : "compone"
+    books          ||--o{ purchase_items : "referencia"
+```
+
+---
