@@ -233,7 +233,10 @@ public interface GenreRepository extends JpaRepository<Genre, Long> {
 2. Crear dos géneros: `FICTION` y `CLASICO`
 3. Agregar ambos géneros a `libro1` — inicializar la lista antes de agregar
 4. Guardar `libro1` con `bookRepo.save(libro1)`
-5. Verificar en pgAdmin que existe la tabla `book_genres` con los registros
+5. Verificar que `genreRepo.existsByName("FICTION")` retorna `true`
+6. Abrir pgAdmin y verificar que existe la tabla `book_genres` con los registros
+
+> La verificación de los géneros se hace directamente en pgAdmin — no es necesario imprimirlos en consola desde el main.
 
 ---
 
@@ -309,20 +312,15 @@ Crear en el paquete `com.bookstore.model`:
 
 1. Inyectar `WishlistRepository` en el `initData`
 2. Guardar `libro1` y `libro2` en favoritos de `sofia` usando `wishlistRepo.save(Wishlist.builder()...build())`
-3. Verificar Query Method: listar los favoritos de `sofia`
+3. Verificar Query Method: imprimir el id y `addedAt` de cada entrada de la wishlist de `sofia`
 4. Verificar duplicado: `existsByCustomerIdAndBookId` debe retornar `true`
+5. Abrir pgAdmin y verificar que existe la tabla `wishlists` con las columnas `id`, `added_at`, `customer_id`, `book_id`
+
+
 
 ---
 
-## 7. Conclusión — ¿Cuándo usar @ManyToMany y cuándo clase intermedia?
-
-En la **Parte B** usaste `@ManyToMany` porque la relación entre `Book` y `Genre` no necesita datos adicionales — solo importa saber qué géneros tiene un libro. Spring crea la tabla intermedia automáticamente.
-
-En la **Parte C** necesitabas guardar `addedAt`. Eso no es posible con `@ManyToMany` puro — no puedes agregar columnas a la tabla que Spring genera. Por eso `Wishlist` es una entidad propia.
-
----
-
-## 8. Publicar en GitHub
+## 7. Publicar en GitHub
 
 ### 8.1 Crear rama feature
 
@@ -360,8 +358,8 @@ US-06 Publicar reseña, US-07 Consultar reseñas,
 US-08 Asociar géneros a libro, US-09 Guardar en favoritos
 
 ## Evidencia
-[Screenshot consola — resultados de los tres bloques]
-[Screenshot pgAdmin — tablas reviews, genres, book_genres, wishlists]
+[Screenshot consola — Review: reseñas ordenadas, promedio, existsBy]
+[Screenshot pgAdmin — tablas reviews, genres, book_genres, wishlists con sus columnas y FKs]
 ```
 
 **Reviewers:** Asignar a otro integrante del equipo para revisión
