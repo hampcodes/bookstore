@@ -43,14 +43,14 @@ COMO lector QUIERO ver las reseñas de un libro ordenadas por calificación PARA
 
 ---
 
-**US-08 · EP01 — Etiquetar un libro con géneros**
+**US-08 · EP01 — Asociar géneros a un libro**
 
-COMO propietario de librería QUIERO asociar etiquetas a un libro PARA que los lectores puedan filtrar el catálogo por género o temática.
+COMO propietario de librería QUIERO asociar uno o más géneros a un libro PARA que los lectores puedan filtrar el catálogo por género.
 
 | Criterio de Aceptación | Descripción |
 |---|---|
-| Escenario exitoso: Etiqueta asociada | Dado que el propietario selecciona un libro y elige una o más etiquetas, Cuando presiona Guardar, Entonces el libro queda asociado a las etiquetas seleccionadas. |
-| Escenario alternativo: Sin etiquetas | Dado que un libro no tiene etiquetas asignadas, Cuando el lector filtra por etiqueta, Entonces el libro no aparece en los resultados. |
+| Escenario exitoso: Etiqueta asociada | Dado que el propietario selecciona un libro y elige uno o más géneros, Cuando presiona Guardar, Entonces el libro queda asociado a los géneros seleccionados. |
+| Escenario alternativo: Sin etiquetas | Dado que un libro no tiene géneros asignados, Cuando el lector filtra por género, Entonces el libro no aparece en los resultados. |
 
 ---
 
@@ -150,7 +150,7 @@ Crear en el paquete `com.bookstore.model`:
 
 ---
 
-## 5. Parte B — Entidad Tag (@ManyToMany)
+## 5. Parte B — Entidad Genre (@ManyToMany)
 
 ### 5.1 Diagrama de Clases
 
@@ -163,74 +163,77 @@ classDiagram
             +Long id
             +String title
             +String isbn
-            +String genre
             +BigDecimal price
             +Integer stock
             +Integer minStock
             +boolean isActive
             +LocalDateTime createdAt
         }
-        class Tag {
+        class Genre {
             +Long id
             +String name
         }
     }
 
-    Book "*" <--> "*" Tag : etiqueta
+    Book "*" <--> "*" Genre : clasifica
 ```
 
 ### 5.2 Relaciones
 
 | Clase | Relación UML | Con | Tipo | Por qué |
 |---|---|---|---|---|
-| `Book` | `@ManyToMany` | `Tag` | Asociación bidireccional | Un libro tiene muchas etiquetas. Una etiqueta agrupa muchos libros. La relación no necesita atributos propios — solo quién está relacionado con quién. |
+| `Book` | `@ManyToMany` | `Genre` | Asociación bidireccional | Un libro puede pertenecer a varios géneros. Un género agrupa muchos libros. La relación no necesita atributos propios — solo quién está relacionado con quién. |
 
-> Spring crea automáticamente la tabla intermedia `book_tags` con las columnas `book_id` y `tag_id`. No necesitas definirla.
+> Spring crea automáticamente la tabla intermedia `book_genres` con las columnas `book_id` y `genre_id`. No necesitas definirla.
 
-### 5.3 Tarea 4 — Crear Tag.java
+### 5.3 Tarea 4 — Crear Genre.java
 
 Crear en el paquete `com.bookstore.model`:
 
 | Atributo | Tipo | Restricción |
 |---|---|---|
 | `id` | `Long` | `@Id`, `@GeneratedValue(IDENTITY)` |
-| `name` | `String` | `@Column(nullable = false, unique = true, length = 50)` |
-| `books` | `List<Book>` | `@ManyToMany(mappedBy = "tags")` |
+| `name` | `String` | `@Column(nullable = false, unique = true, length = 50)` — ej: FICTION, THRILLER, CHILDREN |
+| `books` | `List<Book>` | `@ManyToMany(mappedBy = "genres")` |
 
 > Usar: `@Data @Builder @NoArgsConstructor @AllArgsConstructor`
 
 ### 5.4 Actualizar Book.java
 
-Agregar en `Book.java` el lado dueño de la relación:
+El campo `genre` (String) se elimina y se reemplaza por la relación con `Genre`:
 
 ```java
+// Eliminar este campo
+// private String genre;
+
+// Agregar esta relación
 @ManyToMany
 @JoinTable(
-    name = "book_tags",
+    name = "book_genres",
     joinColumns = @JoinColumn(name = "book_id"),
-    inverseJoinColumns = @JoinColumn(name = "tag_id")
+    inverseJoinColumns = @JoinColumn(name = "genre_id")
 )
-private List<Tag> tags;
+private List<Genre> genres;
 ```
 
-### 5.5 Tarea 5 — Crear TagRepository.java
+### 5.5 Tarea 5 — Crear GenreRepository.java
 
 ```java
-public interface TagRepository extends JpaRepository<Tag, Long> {
+public interface GenreRepository extends JpaRepository<Genre, Long> {
 
-    // Buscar etiqueta por nombre exacto — evita duplicados (US-08)
-    Optional<Tag> findByName(String name);
+    // Buscar género por nombre exacto — evita duplicados (US-08)
+    Optional<Genre> findByName(String name);
     boolean existsByName(String name);
 }
 ```
 
 ### 5.6 Tarea 6 — Test en el método main
 
-1. Inyectar `TagRepository` en el `initData`
-2. Crear dos tags: `CLASICO` y `LATINOAMERICA`
-3. Agregar ambos tags a `libro1` — inicializar la lista antes de agregar
+1. Inyectar `GenreRepository` en el `initData`
+2. Crear dos géneros: `FICTION` y `CLASICO`
+3. Agregar ambos géneros a `libro1` — inicializar la lista antes de agregar
 4. Guardar `libro1` con `bookRepo.save(libro1)`
-5. Verificar en pgAdmin que existe la tabla `book_tags` con los registros
+5. Verificar en pgAdmin que existe la tabla `book_genres` con los registros
 
 ---
 
@@ -254,12 +257,12 @@ classDiagram
         +Long id
         +String title
         +String isbn
-        +String genre
         +BigDecimal price
         +Integer stock
         +Integer minStock
         +boolean isActive
         +LocalDateTime createdAt
+        +List~Genre~ genres
     }
 
     class Wishlist {
@@ -313,7 +316,7 @@ Crear en el paquete `com.bookstore.model`:
 
 ## 7. Conclusión — ¿Cuándo usar @ManyToMany y cuándo clase intermedia?
 
-En la **Parte B** usaste `@ManyToMany` porque la relación entre `Book` y `Tag` no necesita datos adicionales — solo importa saber qué tags tiene un libro. Spring crea la tabla intermedia automáticamente.
+En la **Parte B** usaste `@ManyToMany` porque la relación entre `Book` y `Genre` no necesita datos adicionales — solo importa saber qué géneros tiene un libro. Spring crea la tabla intermedia automáticamente.
 
 En la **Parte C** necesitabas guardar `addedAt`. Eso no es posible con `@ManyToMany` puro — no puedes agregar columnas a la tabla que Spring genera. Por eso `Wishlist` es una entidad propia.
 
@@ -332,7 +335,7 @@ git checkout -b feature/associations-entities
 
 ```bash
 git add .
-git commit -m "feat: implementar entidades Review, Tag y Wishlist"
+git commit -m "feat: implementar entidades Review, Genre y Wishlist"
 git push -u origin feature/associations-entities
 ```
 
@@ -340,25 +343,25 @@ git push -u origin feature/associations-entities
 
 **Título:**
 ```
-feat: implementar entidades Review, Tag y Wishlist — Lab 03-A Actividad
+feat: implementar entidades Review, Genre y Wishlist — Lab 03-A Actividad
 ```
 
 **Descripción:**
 ```markdown
 ## ¿Qué incluye este PR?
 - Parte A: Review.java con @ManyToOne hacia Customer y Book
-- Parte B: Tag.java con @ManyToMany hacia Book
+- Parte B: Genre.java con @ManyToMany hacia Book — reemplaza campo genre String
 - Parte C: Wishlist.java como clase intermedia entre Customer y Book
 - Repositorios con Query Method y SQL nativo
 - Test verificado en consola (captura adjunta)
 
 ## User Stories cubiertas
 US-06 Publicar reseña, US-07 Consultar reseñas,
-US-08 Etiquetar libro, US-09 Guardar en favoritos
+US-08 Asociar géneros a libro, US-09 Guardar en favoritos
 
 ## Evidencia
 [Screenshot consola — resultados de los tres bloques]
-[Screenshot pgAdmin — tablas reviews, tags, book_tags, wishlists]
+[Screenshot pgAdmin — tablas reviews, genres, book_genres, wishlists]
 ```
 
 **Reviewers:** Asignar a otro integrante del equipo para revisión
