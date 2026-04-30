@@ -1,6 +1,6 @@
-# Guia rapida: Bounded Context `beneficiary`
+# Guia rapida: Bounded Context `saving-goal`
 
-Contactos favoritos del cliente (como guardar un contacto en Yape/Plin). Sirve para practicar **DTO + MapStruct + validacion + paginacion** sobre la base ya implementada en el laboratorio.
+Metas de ahorro personales del cliente. Sirve para practicar **DTO + MapStruct + validacion + paginacion** sobre la base ya implementada en el laboratorio.
 
 ---
 
@@ -8,119 +8,113 @@ Contactos favoritos del cliente (como guardar un contacto en Yape/Plin). Sirve p
 
 ### 0.1 Enunciado
 
-En PagoYa los clientes hacen transferencias frecuentes a las mismas personas (familiares, amigos, roommates, proveedores). Hoy tienen que escribir el numero de cuenta cada vez, lo cual es tedioso y propenso a errores. Se necesita una **lista de contactos favoritos** (beneficiarios): el cliente guarda una vez la cuenta destino con un alias y un nombre de titular, y luego puede consultarla rapido para iniciar una transferencia. La lista es **privada por cliente** (solo el dueno la ve y la administra) y debe poder consultarse paginada para clientes con muchos contactos.
+En PagoYa cada cliente puede registrar **metas de ahorro** (un viaje, una laptop, un regalo) con un nombre, un monto objetivo y una fecha limite. Las metas son privadas por cliente y se consultan paginadas.
 
 ### 0.2 User Stories
 
 ---
 
-#### US-B01 — Guardar un contacto favorito
+#### US-S01 — Crear una meta de ahorro
 
 **Como** cliente de PagoYa
-**quiero** registrar la cuenta de alguien a quien le transfiero seguido, con un alias propio
-**para** no tener que escribir el numero de cuenta en cada transferencia.
+**quiero** registrar una meta con nombre, monto objetivo y fecha limite
+**para** organizar el dinero que quiero juntar.
 
 **Criterios de aceptacion**
 
 - **CA-01.1**
-  **Dado** que soy un cliente registrado en PagoYa
-  **cuando** guardo un nuevo contacto con alias, numero de cuenta y nombre del titular validos
-  **entonces** el contacto queda agregado a mi lista de favoritos y veo la confirmacion del registro.
+  **Dado** que soy un cliente registrado
+  **cuando** registro una meta con datos validos
+  **entonces** la meta queda guardada y veo la confirmacion del registro.
 
 - **CA-01.2**
-  **Dado** que estoy registrando un nuevo contacto
-  **cuando** ingreso un numero de cuenta con un formato que no corresponde al sistema
-  **entonces** la operacion se rechaza y el sistema me indica que el numero de cuenta no es valido.
+  **Dado** que estoy registrando una meta
+  **cuando** el monto objetivo es 0, negativo o supera 1 000 000
+  **entonces** la operacion se rechaza con un mensaje claro.
 
 - **CA-01.3**
-  **Dado** que estoy registrando un nuevo contacto
-  **cuando** dejo el alias vacio o ingreso un nombre de titular demasiado largo
-  **entonces** la operacion se rechaza y el sistema me indica cuales campos son invalidos.
+  **Dado** que estoy registrando una meta
+  **cuando** la fecha limite es hoy o anterior
+  **entonces** la operacion se rechaza indicando que la fecha debe ser futura.
 
 - **CA-01.4**
-  **Dado** que el cliente al que se intenta asociar el contacto no existe
-  **cuando** intento guardar el contacto a su nombre
-  **entonces** la operacion se rechaza y el sistema me informa que el cliente no fue encontrado.
+  **Dado** que el cliente al que se asocia la meta no existe
+  **cuando** intento crearla
+  **entonces** el sistema informa que el cliente no fue encontrado.
 
 - **CA-01.5**
-  **Dado** que guardo un contacto correctamente
+  **Dado** que se crea una meta correctamente
   **cuando** se confirma la operacion
-  **entonces** queda registrada automaticamente la fecha y hora en que se creo (yo no las informo).
+  **entonces** queda registrada automaticamente la fecha y hora de creacion (yo no la informo).
 
 ---
 
-#### US-B02 — Listar mis contactos favoritos
+#### US-S02 — Listar mis metas
 
 **Como** cliente
-**quiero** ver mis contactos guardados, paginados
-**para** elegir rapido al destinatario de una nueva transferencia.
+**quiero** ver mis metas paginadas
+**para** revisar mi progreso de ahorro.
 
 **Criterios de aceptacion**
 
 - **CA-02.1**
-  **Dado** que tengo varios contactos guardados
-  **cuando** consulto mi lista de favoritos
-  **entonces** veo mis contactos paginados, con cuantos hay en total y cuantas paginas existen.
+  **Dado** que tengo varias metas
+  **cuando** consulto mi lista
+  **entonces** veo mis metas paginadas con total de elementos y total de paginas.
 
 - **CA-02.2**
-  **Dado** que aun no he guardado ningun contacto
-  **cuando** consulto mi lista de favoritos
-  **entonces** veo una lista vacia (no recibo un error de no encontrado).
+  **Dado** que aun no he creado ninguna meta
+  **cuando** consulto mi lista
+  **entonces** veo una lista vacia (no un error).
 
 - **CA-02.3**
-  **Dado** que existen varios clientes con contactos cada uno
-  **cuando** consulto mi lista de favoritos
-  **entonces** solo veo los mios y nunca los de otros clientes.
-
-- **CA-02.4**
-  **Dado** que consulto mi lista de favoritos
-  **cuando** reviso cada contacto en la respuesta
-  **entonces** veo el alias, el numero de cuenta y el nombre del titular, sin datos internos del sistema.
+  **Dado** que existen metas de varios clientes
+  **cuando** consulto mi lista
+  **entonces** solo veo las mias.
 
 ---
 
-#### US-B03 — Eliminar un contacto que ya no uso
+#### US-S03 — Eliminar una meta
 
 **Como** cliente
-**quiero** eliminar un contacto que ya no necesito
-**para** mantener mi lista corta y relevante.
+**quiero** eliminar una meta que ya no necesito
+**para** mantener mi lista relevante.
 
 **Criterios de aceptacion**
 
 - **CA-03.1**
-  **Dado** que tengo un contacto guardado en mi lista
-  **cuando** solicito eliminarlo
-  **entonces** el contacto desaparece de mi lista y la operacion se confirma sin contenido adicional.
+  **Dado** que tengo una meta guardada
+  **cuando** solicito eliminarla
+  **entonces** la meta desaparece y la operacion se confirma sin contenido adicional.
 
 - **CA-03.2**
-  **Dado** que el contacto que intento eliminar no existe
+  **Dado** que la meta no existe
   **cuando** envio la solicitud de eliminacion
-  **entonces** el sistema me informa que el contacto no fue encontrado.
+  **entonces** el sistema informa que la meta no fue encontrada.
 
 ### 0.3 Reglas de negocio
 
-| Codigo     | Regla                                                                                                               |
-| ---------- | ------------------------------------------------------------------------------------------------------------------- |
-| **RN-B01** | Un cliente no puede registrar dos veces el mismo numero de cuenta como contacto.                                    |
-| **RN-B02** | Un cliente no puede registrarse a si mismo como contacto (la cuenta destino no puede ser una de sus propias cuentas). |
-| **RN-B03** | Solo se pueden registrar contactos a nombre de clientes que existen en PagoYa.                                       |
-| **RN-B04** | El numero de cuenta del contacto debe respetar el formato oficial de cuentas de PagoYa.                              |
-| **RN-B05** | El alias del contacto es obligatorio y no puede superar los 30 caracteres.                                           |
-| **RN-B06** | El nombre del titular del contacto es obligatorio y no puede superar los 100 caracteres.                             |
-| **RN-B07** | La fecha y hora de creacion del contacto la registra automaticamente PagoYa; el cliente no la informa.               |
+| Codigo     | Regla                                                                                              |
+| ---------- | -------------------------------------------------------------------------------------------------- |
+| **RN-S01** | Un cliente no puede tener dos metas con el mismo nombre.                                            |
+| **RN-S02** | El nombre es obligatorio y no puede superar los 50 caracteres.                                      |
+| **RN-S03** | El monto objetivo debe ser mayor a 0 y no superar 1 000 000.                                        |
+| **RN-S04** | La fecha limite debe ser estrictamente futura (posterior al dia de creacion).                       |
+| **RN-S05** | Solo se pueden registrar metas a nombre de clientes que existen en PagoYa.                          |
+| **RN-S06** | La fecha y hora de creacion la registra automaticamente PagoYa; el cliente no la informa.           |
 
 ### 0.4 Modelo del dominio (resumen)
 
 ```
-Customer 1 ───< * Beneficiary
+Customer 1 ───< * SavingGoal
                  - id
-                 - alias            (max 30)
-                 - accountNumber    (6-12 chars)
-                 - ownerName        (max 100)
+                 - name            (max 50, unico por cliente)
+                 - targetAmount    (> 0, max 1 000 000)
+                 - deadline        (fecha futura)
                  - createdAt
 ```
 
-> Un `Customer` puede tener muchos `Beneficiary`. Cada `Beneficiary` pertenece a **exactamente un** `Customer` (`@ManyToOne`).
+> Un `Customer` puede tener muchas `SavingGoal`. Cada `SavingGoal` pertenece a **exactamente un** `Customer` (`@ManyToOne`).
 
 ---
 
@@ -128,44 +122,47 @@ Customer 1 ───< * Beneficiary
 
 ```bash
 git checkout develop
-git checkout -b feature/beneficiary-context
+git checkout -b feature/saving-goal-context
 ```
 
 ---
 
 ## 2. Estructura a crear
 
-Dentro de `src/main/java/com/hampcode/pagoya/` se crea el paquete `beneficiary/` con la misma estructura que los otros bounded contexts:
+Dentro de `src/main/java/com/hampcode/pagoya/` se crea el paquete `savinggoal/` con la misma estructura que los otros bounded contexts:
 
 ```
-beneficiary/
-|-- controller/   <- BeneficiaryController
-|-- service/      <- IBeneficiaryService, BeneficiaryService
-|-- repository/   <- BeneficiaryRepository
-|-- model/        <- Beneficiary
-|-- dto/          <- CreateBeneficiaryRequest, BeneficiaryResponse
-|-- mapper/       <- BeneficiaryMapper
-`-- exception/    <- DuplicateBeneficiaryException, SelfBeneficiaryException
+savinggoal/
+|-- controller/   <- SavingGoalController
+|-- service/      <- ISavingGoalService, SavingGoalService
+|-- repository/   <- SavingGoalRepository
+|-- model/        <- SavingGoal
+|-- dto/          <- CreateSavingGoalRequest, SavingGoalResponse
+|-- mapper/       <- SavingGoalMapper
+`-- exception/    <- DuplicateGoalNameException
 ```
 
 ---
 
 ## 3. Archivos (con su ubicacion exacta)
 
-### 3.1 `model/Beneficiary.java`
+### 3.1 `model/SavingGoal.java`
 ```java
-package com.hampcode.pagoya.beneficiary.model;
+package com.hampcode.pagoya.savinggoal.model;
 
 import com.hampcode.pagoya.customer.model.Customer;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "beneficiaries",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"customer_id","account_number"}))
+@Table(name = "saving_goals",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"customer_id","name"}))
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Beneficiary {
+public class SavingGoal {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -173,155 +170,146 @@ public class Beneficiary {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
-    @Column(nullable = false, length = 30)
-    private String alias;
+    @Column(nullable = false, length = 50)
+    private String name;
 
-    @Column(name = "account_number", nullable = false, length = 12)
-    private String accountNumber;
+    @Column(name = "target_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal targetAmount;
 
-    @Column(name = "owner_name", nullable = false, length = 100)
-    private String ownerName;
+    @Column(nullable = false)
+    private LocalDate deadline;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }
 ```
-> El cliente se referencia con `@ManyToOne` a la entidad `Customer` (no con `Long`). JPA crea la columna `customer_id` como FK real.
+> El cliente se referencia con `@ManyToOne` a la entidad `Customer` (no con `Long`). JPA crea la columna `customer_id` como FK real. La restriccion `unique(customer_id, name)` apoya la RN-S01 a nivel de base de datos.
 
-### 3.2 `repository/BeneficiaryRepository.java`
+### 3.2 `repository/SavingGoalRepository.java`
 ```java
-package com.hampcode.pagoya.beneficiary.repository;
+package com.hampcode.pagoya.savinggoal.repository;
 
-import com.hampcode.pagoya.beneficiary.model.Beneficiary;
+import com.hampcode.pagoya.savinggoal.model.SavingGoal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface BeneficiaryRepository extends JpaRepository<Beneficiary, Long> {
-    boolean existsByCustomer_IdAndAccountNumber(Long customerId, String accountNumber);
-    Page<Beneficiary> findByCustomer_Id(Long customerId, Pageable pageable);
+public interface SavingGoalRepository extends JpaRepository<SavingGoal, Long> {
+    boolean existsByCustomer_IdAndName(Long customerId, String name);
+    Page<SavingGoal> findByCustomer_Id(Long customerId, Pageable pageable);
 }
 ```
-> La sintaxis `Customer_Id` le dice a Spring Data JPA que navegue de `beneficiary.customer.id` (es lo mismo que escribir `WHERE b.customer.id = ?`).
+> La sintaxis `Customer_Id` le dice a Spring Data JPA que navegue de `savingGoal.customer.id` (es lo mismo que escribir `WHERE g.customer.id = ?`).
 
-### 3.3 DTOs — `dto/CreateBeneficiaryRequest.java`
+### 3.3 DTOs — `dto/CreateSavingGoalRequest.java`
 ```java
-package com.hampcode.pagoya.beneficiary.dto;
+package com.hampcode.pagoya.savinggoal.dto;
 
 import jakarta.validation.constraints.*;
 
-public record CreateBeneficiaryRequest(
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+public record CreateSavingGoalRequest(
     @NotNull(message = "el customerId es obligatorio")
     Long customerId,
 
-    @NotBlank(message = "el alias es obligatorio")
-    @Size(max = 30, message = "el alias no puede exceder 30 caracteres")
-    String alias,
+    @NotBlank(message = "el nombre es obligatorio")
+    @Size(max = 50, message = "el nombre no puede exceder 50 caracteres")
+    String name,
 
-    @NotBlank(message = "la cuenta es obligatoria")
-    @Pattern(regexp = "[A-Z0-9-]{6,12}",
-             message = "la cuenta debe tener entre 6 y 12 caracteres (A-Z, 0-9, -)")
-    String accountNumber,
+    @NotNull(message = "el monto objetivo es obligatorio")
+    @DecimalMin(value = "0.01", message = "el monto objetivo debe ser mayor a 0")
+    @DecimalMax(value = "1000000.00", message = "el monto objetivo no puede superar 1 000 000")
+    BigDecimal targetAmount,
 
-    @NotBlank(message = "el nombre del titular es obligatorio")
-    @Size(max = 100)
-    String ownerName
+    @NotNull(message = "la fecha limite es obligatoria")
+    @Future(message = "la fecha limite debe ser futura")
+    LocalDate deadline
 ) {}
 ```
+> Aqui practicamos validaciones variadas: texto (`@NotBlank`, `@Size`), numero (`@DecimalMin`, `@DecimalMax`) y fecha (`@Future`). El framework las valida automaticamente cuando el controller usa `@Valid`.
 
-### 3.4 DTOs — `dto/BeneficiaryResponse.java`
+### 3.4 DTOs — `dto/SavingGoalResponse.java`
 ```java
-package com.hampcode.pagoya.beneficiary.dto;
+package com.hampcode.pagoya.savinggoal.dto;
 
-public record BeneficiaryResponse(
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+public record SavingGoalResponse(
     Long id,
-    String alias,
-    String accountNumber,
-    String ownerName
+    String name,
+    BigDecimal targetAmount,
+    LocalDate deadline
 ) {}
 ```
 > Notar: **no expone `customerId` ni `createdAt`** porque el cliente no los necesita ver. Esto es justo el sentido de tener Response DTO.
 
-### 3.5 `mapper/BeneficiaryMapper.java`
+### 3.5 `mapper/SavingGoalMapper.java`
 ```java
-package com.hampcode.pagoya.beneficiary.mapper;
+package com.hampcode.pagoya.savinggoal.mapper;
 
-import com.hampcode.pagoya.beneficiary.dto.BeneficiaryResponse;
-import com.hampcode.pagoya.beneficiary.dto.CreateBeneficiaryRequest;
-import com.hampcode.pagoya.beneficiary.model.Beneficiary;
+import com.hampcode.pagoya.savinggoal.dto.CreateSavingGoalRequest;
+import com.hampcode.pagoya.savinggoal.dto.SavingGoalResponse;
+import com.hampcode.pagoya.savinggoal.model.SavingGoal;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
-public interface BeneficiaryMapper {
+public interface SavingGoalMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "customer", ignore = true)   // lo carga el service desde CustomerRepository
     @Mapping(target = "createdAt", ignore = true)
-    Beneficiary toEntity(CreateBeneficiaryRequest request);
+    SavingGoal toEntity(CreateSavingGoalRequest request);
 
-    BeneficiaryResponse toResponse(Beneficiary b);
+    SavingGoalResponse toResponse(SavingGoal goal);
 }
 ```
-> El mapper es un **bean Spring** (`@Mapper(componentModel = "spring")`). MapStruct genera la implementacion en `target/generated-sources/`. Como `Beneficiary.customer` es una entidad (`Customer`), el mapper la **ignora**: el service hace `customerRepository.findById(...)` y la asigna antes de guardar.
+> El mapper es un **bean Spring** (`@Mapper(componentModel = "spring")`). MapStruct genera la implementacion en `target/generated-sources/`. Como `SavingGoal.customer` es una entidad (`Customer`), el mapper la **ignora**: el service hace `customerRepository.findById(...)` y la asigna antes de guardar.
 
-### 3.6 Excepciones — `exception/DuplicateBeneficiaryException.java`
+### 3.6 Excepciones — `exception/DuplicateGoalNameException.java`
 ```java
-package com.hampcode.pagoya.beneficiary.exception;
+package com.hampcode.pagoya.savinggoal.exception;
 
 import com.hampcode.pagoya.shared.exception.BusinessRuleException;
 
-public class DuplicateBeneficiaryException extends BusinessRuleException {
-    public DuplicateBeneficiaryException(String accountNumber) {
-        super("la cuenta " + accountNumber + " ya esta en tus contactos");
+public class DuplicateGoalNameException extends BusinessRuleException {
+    public DuplicateGoalNameException(String name) {
+        super("ya tienes una meta con el nombre '" + name + "'");
     }
 }
 ```
 
-### 3.7 Excepciones — `exception/SelfBeneficiaryException.java`
+### 3.7 `service/ISavingGoalService.java`
 ```java
-package com.hampcode.pagoya.beneficiary.exception;
+package com.hampcode.pagoya.savinggoal.service;
 
-import com.hampcode.pagoya.shared.exception.BusinessRuleException;
-
-public class SelfBeneficiaryException extends BusinessRuleException {
-    public SelfBeneficiaryException() {
-        super("no puedes guardarte a ti mismo como beneficiario");
-    }
-}
-```
-
-### 3.8 `service/IBeneficiaryService.java`
-```java
-package com.hampcode.pagoya.beneficiary.service;
-
-import com.hampcode.pagoya.beneficiary.dto.BeneficiaryResponse;
-import com.hampcode.pagoya.beneficiary.dto.CreateBeneficiaryRequest;
+import com.hampcode.pagoya.savinggoal.dto.CreateSavingGoalRequest;
+import com.hampcode.pagoya.savinggoal.dto.SavingGoalResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-public interface IBeneficiaryService {
-    BeneficiaryResponse create(CreateBeneficiaryRequest request);
-    Page<BeneficiaryResponse> findByCustomer(Long customerId, Pageable pageable);
+public interface ISavingGoalService {
+    SavingGoalResponse create(CreateSavingGoalRequest request);
+    Page<SavingGoalResponse> findByCustomer(Long customerId, Pageable pageable);
     void delete(Long id);
 }
 ```
 
-### 3.9 `service/BeneficiaryService.java`
+### 3.8 `service/SavingGoalService.java`
 ```java
-package com.hampcode.pagoya.beneficiary.service;
+package com.hampcode.pagoya.savinggoal.service;
 
-import com.hampcode.pagoya.account.repository.AccountRepository;
-import com.hampcode.pagoya.account.repository.AccountRepository;
-import com.hampcode.pagoya.beneficiary.dto.BeneficiaryResponse;
-import com.hampcode.pagoya.beneficiary.dto.CreateBeneficiaryRequest;
-import com.hampcode.pagoya.beneficiary.exception.DuplicateBeneficiaryException;
-import com.hampcode.pagoya.beneficiary.exception.SelfBeneficiaryException;
-import com.hampcode.pagoya.beneficiary.mapper.BeneficiaryMapper;
-import com.hampcode.pagoya.beneficiary.model.Beneficiary;
-import com.hampcode.pagoya.beneficiary.repository.BeneficiaryRepository;
 import com.hampcode.pagoya.customer.model.Customer;
 import com.hampcode.pagoya.customer.repository.CustomerRepository;
+import com.hampcode.pagoya.savinggoal.dto.CreateSavingGoalRequest;
+import com.hampcode.pagoya.savinggoal.dto.SavingGoalResponse;
+import com.hampcode.pagoya.savinggoal.exception.DuplicateGoalNameException;
+import com.hampcode.pagoya.savinggoal.mapper.SavingGoalMapper;
+import com.hampcode.pagoya.savinggoal.model.SavingGoal;
+import com.hampcode.pagoya.savinggoal.repository.SavingGoalRepository;
 import com.hampcode.pagoya.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -333,66 +321,59 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class BeneficiaryService implements IBeneficiaryService {
+public class SavingGoalService implements ISavingGoalService {
 
-    private final BeneficiaryRepository beneficiaryRepository;
+    private final SavingGoalRepository savingGoalRepository;
     private final CustomerRepository customerRepository;
-    private final AccountRepository accountRepository;
-    private final BeneficiaryMapper beneficiaryMapper;
+    private final SavingGoalMapper savingGoalMapper;
 
     @Override
     @Transactional
-    public BeneficiaryResponse create(CreateBeneficiaryRequest request) {
+    public SavingGoalResponse create(CreateSavingGoalRequest request) {
         // 1) cargar el Customer (existe?) para asociarlo a la entidad
         Customer customer = customerRepository.findById(request.customerId())
             .orElseThrow(() -> new ResourceNotFoundException(
                 "cliente con id " + request.customerId() + " no encontrado"));
 
-        // RN-B02: no puede guardarse a si mismo
-        accountRepository.findByAccountNumber(request.accountNumber())
-            .filter(a -> a.getCustomerId().equals(customer.getId()))
-            .ifPresent(a -> { throw new SelfBeneficiaryException(); });
+        // RN-S01: nombre unico por cliente
+        if (savingGoalRepository.existsByCustomer_IdAndName(customer.getId(), request.name()))
+            throw new DuplicateGoalNameException(request.name());
 
-        // RN-B01: cuenta unica por cliente
-        if (beneficiaryRepository.existsByCustomer_IdAndAccountNumber(
-                customer.getId(), request.accountNumber()))
-            throw new DuplicateBeneficiaryException(request.accountNumber());
-
-        Beneficiary entity = beneficiaryMapper.toEntity(request);
+        SavingGoal entity = savingGoalMapper.toEntity(request);
         entity.setCustomer(customer);                  // ← asocia la entidad real
         entity.setCreatedAt(LocalDateTime.now());
-        return beneficiaryMapper.toResponse(beneficiaryRepository.save(entity));
+        return savingGoalMapper.toResponse(savingGoalRepository.save(entity));
     }
 
     @Override
-    public Page<BeneficiaryResponse> findByCustomer(Long customerId, Pageable pageable) {
-        return beneficiaryRepository.findByCustomer_Id(customerId, pageable)
-            .map(beneficiaryMapper::toResponse);
+    public Page<SavingGoalResponse> findByCustomer(Long customerId, Pageable pageable) {
+        return savingGoalRepository.findByCustomer_Id(customerId, pageable)
+            .map(savingGoalMapper::toResponse);
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        if (!beneficiaryRepository.existsById(id))
-            throw new ResourceNotFoundException("beneficiario " + id + " no encontrado");
-        beneficiaryRepository.deleteById(id);
+        if (!savingGoalRepository.existsById(id))
+            throw new ResourceNotFoundException("meta " + id + " no encontrada");
+        savingGoalRepository.deleteById(id);
     }
 }
 ```
-> **Nota didactica**: el `BeneficiaryMapper` *no* sabe convertir un `Long customerId` (DTO) a un `Customer` (entidad), porque no tiene acceso al `CustomerRepository`. Por eso el service:
+> **Nota didactica**: el `SavingGoalMapper` *no* sabe convertir un `Long customerId` (DTO) a un `Customer` (entidad), porque no tiene acceso al `CustomerRepository`. Por eso el service:
 > 1. Hace `customerRepository.findById(...)` y valida que exista.
 > 2. Llama al mapper con `toEntity(request)` (sin el customer).
 > 3. Asigna `entity.setCustomer(customer)` antes de `save`.
 >
 > Asi se respeta la separacion: **el mapper solo transforma estructura, el service decide reglas de negocio**.
 
-### 3.10 `controller/BeneficiaryController.java`
+### 3.9 `controller/SavingGoalController.java`
 ```java
-package com.hampcode.pagoya.beneficiary.controller;
+package com.hampcode.pagoya.savinggoal.controller;
 
-import com.hampcode.pagoya.beneficiary.dto.BeneficiaryResponse;
-import com.hampcode.pagoya.beneficiary.dto.CreateBeneficiaryRequest;
-import com.hampcode.pagoya.beneficiary.service.IBeneficiaryService;
+import com.hampcode.pagoya.savinggoal.dto.CreateSavingGoalRequest;
+import com.hampcode.pagoya.savinggoal.dto.SavingGoalResponse;
+import com.hampcode.pagoya.savinggoal.service.ISavingGoalService;
 import com.hampcode.pagoya.shared.pagination.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -403,30 +384,30 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/beneficiaries")
+@RequestMapping("/api/saving-goals")
 @RequiredArgsConstructor
-public class BeneficiaryController {
+public class SavingGoalController {
 
-    private final IBeneficiaryService beneficiaryService;
+    private final ISavingGoalService savingGoalService;
 
     @PostMapping
-    public ResponseEntity<BeneficiaryResponse> create(
-            @Valid @RequestBody CreateBeneficiaryRequest request) {
+    public ResponseEntity<SavingGoalResponse> create(
+            @Valid @RequestBody CreateSavingGoalRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(beneficiaryService.create(request));
+            .body(savingGoalService.create(request));
     }
 
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<PageResponse<BeneficiaryResponse>> findByCustomer(
+    public ResponseEntity<PageResponse<SavingGoalResponse>> findByCustomer(
             @PathVariable Long customerId,
             @PageableDefault(size = 10, sort = "id") Pageable pageable) {
         return ResponseEntity.ok(
-            PageResponse.from(beneficiaryService.findByCustomer(customerId, pageable)));
+            PageResponse.from(savingGoalService.findByCustomer(customerId, pageable)));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        beneficiaryService.delete(id);
+        savingGoalService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
@@ -443,84 +424,71 @@ Agregalas a la coleccion `pagoya-api` (o reusa las que ya tienes):
 |---|---|
 | `base_url` | `http://localhost:8080` |
 | `customer_id` | `1` |
-| `account_number` | `ACC-001` *(cuenta del propio cliente, para probar RN-B02)* |
-| `target_account_number` | `ACC-002` *(cuenta de otra persona, valida)* |
-| `beneficiary_id` | `1` |
+| `goal_id` | `1` |
 
 ### 4.2 Requests
 
-#### POST — crear beneficiario (camino feliz)
+#### POST — crear meta (camino feliz)
 ```
-POST {{base_url}}/api/beneficiaries
+POST {{base_url}}/api/saving-goals
 Content-Type: application/json
 ```
 ```json
 {
   "customerId": {{customer_id}},
-  "alias": "Mama",
-  "accountNumber": "{{target_account_number}}",
-  "ownerName": "Maria Torres"
+  "name": "Viaje a Cusco",
+  "targetAmount": 2500.00,
+  "deadline": "2026-12-31"
 }
 ```
-Esperado: `201 Created` + `BeneficiaryResponse` (id, alias, accountNumber, ownerName).
+Esperado: `201 Created` + `SavingGoalResponse` (id, name, targetAmount, deadline).
 
-#### POST — validacion fallida (RN-B04, RN-B05)
+#### POST — validacion fallida (RN-S02, RN-S03, RN-S04)
 ```
-POST {{base_url}}/api/beneficiaries
+POST {{base_url}}/api/saving-goals
 ```
 ```json
 {
   "customerId": {{customer_id}},
-  "alias": "",
-  "accountNumber": "abc",
-  "ownerName": ""
+  "name": "",
+  "targetAmount": 0,
+  "deadline": "2020-01-01"
 }
 ```
 Esperado: `400 Bad Request` con `ErrorResponse` y `details` listando cada campo invalido.
 
-#### POST — cuenta duplicada (RN-B01)
+#### POST — nombre duplicado (RN-S01)
 Repetir el primer POST tal cual. Esperado: `400` con
-`message: "la cuenta ACC-002 ya esta en tus contactos"`.
+`message: "ya tienes una meta con el nombre 'Viaje a Cusco'"`.
 
-#### POST — auto-beneficiario (RN-B02)
-```json
-{
-  "customerId": {{customer_id}},
-  "alias": "Yo mismo",
-  "accountNumber": "{{account_number}}",
-  "ownerName": "Yo"
-}
-```
-Esperado: `400` con `message: "no puedes guardarte a ti mismo como beneficiario"`.
-
-#### POST — cliente inexistente (RN-B03)
+#### POST — cliente inexistente (RN-S05)
 ```json
 {
   "customerId": 9999,
-  "alias": "Test",
-  "accountNumber": "ACC-999",
-  "ownerName": "Nadie"
+  "name": "Laptop nueva",
+  "targetAmount": 4500.00,
+  "deadline": "2026-10-01"
 }
 ```
 Esperado: `404 Not Found` con `message: "cliente con id 9999 no encontrado"`.
 
-#### GET — listar paginado los contactos del cliente
+#### GET — listar paginado las metas del cliente
 ```
-GET {{base_url}}/api/beneficiaries/customer/{{customer_id}}?page=0&size=10
+GET {{base_url}}/api/saving-goals/customer/{{customer_id}}?page=0&size=10
 ```
-Esperado: `200 OK` con `PageResponse<BeneficiaryResponse>` (`content`, `page`, `size`, `totalElements`, `totalPages`, `first`, `last`).
+Esperado: `200 OK` con `PageResponse<SavingGoalResponse>` (`content`, `page`, `size`, `totalElements`, `totalPages`, `first`, `last`).
 
-#### DELETE — eliminar un beneficiario
+#### DELETE — eliminar una meta
 ```
-DELETE {{base_url}}/api/beneficiaries/{{beneficiary_id}}
+DELETE {{base_url}}/api/saving-goals/{{goal_id}}
 ```
 Esperado: `204 No Content` (sin body).
 
-#### DELETE — beneficiario inexistente
+#### DELETE — meta inexistente
 ```
-DELETE {{base_url}}/api/beneficiaries/9999
+DELETE {{base_url}}/api/saving-goals/9999
 ```
-Esperado: `404 Not Found` con `message: "beneficiario 9999 no encontrado"`.
+Esperado: `404 Not Found` con `message: "meta 9999 no encontrada"`.
 
 ---
 
@@ -534,25 +502,25 @@ mvn clean compile
 export $(grep -v '^#' .env | xargs) && mvn spring-boot:run
 ```
 
-Hibernate creara la tabla `beneficiaries` automaticamente al arrancar (`ddl-auto: update`).
+Hibernate creara la tabla `saving_goals` automaticamente al arrancar (`ddl-auto: update`).
 
 ---
 
 ## 6. Commit y Pull Request
 
 ```bash
-git add src/main/java/com/hampcode/pagoya/beneficiary
-git commit -m "feat(beneficiary): contactos favoritos con DTO, mapper y paginacion"
-git push origin feature/beneficiary-context
+git add src/main/java/com/hampcode/pagoya/savinggoal
+git commit -m "feat(saving-goal): metas de ahorro con DTO, mapper y paginacion"
+git push origin feature/saving-goal-context
 ```
 
-Abrir el PR en GitHub: **`feature/beneficiary-context` → `develop`**.
+Abrir el PR en GitHub: **`feature/saving-goal-context` → `develop`**.
 
 Titulo sugerido:
-> `feat(beneficiary): contactos favoritos del cliente`
+> `feat(saving-goal): metas de ahorro del cliente`
 
 Descripcion sugerida (breve):
-- Nuevo bounded context `beneficiary`.
-- Endpoints: `POST /api/beneficiaries`, `GET /api/beneficiaries/customer/{id}`, `DELETE /api/beneficiaries/{id}`.
+- Nuevo bounded context `saving-goal`.
+- Endpoints: `POST /api/saving-goals`, `GET /api/saving-goals/customer/{id}`, `DELETE /api/saving-goals/{id}`.
 - Aplica DTO + MapStruct + Bean Validation + paginacion.
-- Reglas: cuenta unica por cliente (RN-B01), no auto-beneficiario (RN-B02).
+- Reglas: nombre unico por cliente (RN-S01), monto y fecha validados (RN-S03, RN-S04).
