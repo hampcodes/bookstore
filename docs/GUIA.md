@@ -1,168 +1,470 @@
-# Guia rapida: Bounded Context `saving-goal`
+# Actividad: Bounded Context `billing`
 
-Metas de ahorro personales del cliente. Sirve para practicar **DTO + MapStruct + validacion + paginacion** sobre la base ya implementada en el laboratorio.
+**Elaborado por:** Henry Antonio Mendoza Puerta
 
----
+Esta actividad ha sido preparada como parte de tu capacitacion. Usala como guia para desarrollar tu proyecto y como material de estudio para tus examenes.
 
-## 0. Contexto del feature
+## Indice
 
-### 0.1 Enunciado
-
-En PagoYa cada cliente puede registrar **metas de ahorro** (un viaje, una laptop, un regalo) con un nombre, un monto objetivo y una fecha limite. Las metas son privadas por cliente y se consultan paginadas.
-
-### 0.2 User Stories
-
----
-
-#### US-S01 — Crear una meta de ahorro
-
-**Como** cliente de PagoYa
-**quiero** registrar una meta con nombre, monto objetivo y fecha limite
-**para** organizar el dinero que quiero juntar.
-
-**Criterios de aceptacion**
-
-- **CA-01.1**
-  **Dado** que soy un cliente registrado
-  **cuando** registro una meta con datos validos
-  **entonces** la meta queda guardada y veo la confirmacion del registro.
-
-- **CA-01.2**
-  **Dado** que estoy registrando una meta
-  **cuando** el monto objetivo es 0, negativo o supera 1 000 000
-  **entonces** la operacion se rechaza con un mensaje claro.
-
-- **CA-01.3**
-  **Dado** que estoy registrando una meta
-  **cuando** la fecha limite es hoy o anterior
-  **entonces** la operacion se rechaza indicando que la fecha debe ser futura.
-
-- **CA-01.4**
-  **Dado** que el cliente al que se asocia la meta no existe
-  **cuando** intento crearla
-  **entonces** el sistema informa que el cliente no fue encontrado.
-
-- **CA-01.5**
-  **Dado** que se crea una meta correctamente
-  **cuando** se confirma la operacion
-  **entonces** queda registrada automaticamente la fecha y hora de creacion (yo no la informo).
+- [0. Setup inicial](#0-setup-inicial)
+- [1. Enunciado](#1-enunciado)
+- [2. Objetivos](#2-objetivos)
+- [3. Historias de usuario](#3-historias-de-usuario)
+- [4. Reglas de negocio](#4-reglas-de-negocio)
+- [5. Modelo del dominio](#5-modelo-del-dominio)
+- [6. Levantar la infraestructura](#6-levantar-la-infraestructura)
+- [7. Crear la rama](#7-crear-la-rama)
+- [8. Estructura del paquete](#8-estructura-del-paquete)
+- [9. Implementar `ServiceProvider` (catalogo)](#9-implementar-serviceprovider-catalogo)
+- [10. Implementar `BillPayment` (transaccional)](#10-implementar-billpayment-transaccional)
+- [11. Implementar el reporte por categoria (US-B04)](#11-implementar-el-reporte-por-categoria-us-b04)
+- [12. Configurar Swagger / OpenAPI](#12-configurar-swagger--openapi)
+- [13. Ejecutar el proyecto](#13-ejecutar-el-proyecto)
+- [14. Probar la API en Postman](#14-probar-la-api-en-postman)
+- [15. Commit y Pull Request](#15-commit-y-pull-request)
+- [16. Comandos de Git: cuando usar cada uno](#16-comandos-de-git-cuando-usar-cada-uno)
+- [17. Tarea propuesta](#17-tarea-propuesta)
 
 ---
 
-#### US-S02 — Listar mis metas
+## 0. Setup inicial
 
-**Como** cliente
-**quiero** ver mis metas paginadas
-**para** revisar mi progreso de ahorro.
+Antes de leer el contexto y arrancar a programar, prepara tu entorno y tu repositorio.
 
-**Criterios de aceptacion**
+### 0.1 Descargar el proyecto
 
-- **CA-02.1**
-  **Dado** que tengo varias metas
-  **cuando** consulto mi lista
-  **entonces** veo mis metas paginadas con total de elementos y total de paginas.
+Desde el material de la **semana 5**, descarga el archivo `pagoya-api.zip` y desempaquetalo en una carpeta de tu eleccion.
 
-- **CA-02.2**
-  **Dado** que aun no he creado ninguna meta
-  **cuando** consulto mi lista
-  **entonces** veo una lista vacia (no un error).
+### 0.2 Importar la coleccion en Postman
 
-- **CA-02.3**
-  **Dado** que existen metas de varios clientes
-  **cuando** consulto mi lista
-  **entonces** solo veo las mias.
+1. Abre Postman e **inicia sesion** con tu cuenta. Sin login, las colecciones se pierden al cerrar la app.
+2. En la sidebar click **Import**.
+3. Selecciona el archivo `pagoya-api.postman_collection.json` que viene dentro del proyecto.
+4. La coleccion `PagoYa API` aparecera en tu workspace con los endpoints ya existentes (auth, customer, transfer).
 
----
+### 0.3 Crear tu repositorio en GitHub
 
-#### US-S03 — Eliminar una meta
+1. Entra a `github.com` y click en **New repository**.
+2. Nombre: `pagoya-api` (o el que prefieras).
+3. Visibilidad: la que tu elijas.
+4. **NO marques** *Add a README file*, *Add .gitignore* ni *Choose a license*. El repo debe quedar VACIO.
+5. Click **Create repository**.
 
-**Como** cliente
-**quiero** eliminar una meta que ya no necesito
-**para** mantener mi lista relevante.
+GitHub te mostrara una pagina con los comandos para subir un proyecto existente. Vas a usarlos en el siguiente paso.
 
-**Criterios de aceptacion**
+### 0.4 Subir el proyecto a tu repositorio
 
-- **CA-03.1**
-  **Dado** que tengo una meta guardada
-  **cuando** solicito eliminarla
-  **entonces** la meta desaparece y la operacion se confirma sin contenido adicional.
+Abre la terminal, entra a la carpeta del proyecto y ejecuta los comandos que GitHub te muestra (los mismos que ves en la pagina del repo recien creado):
 
-- **CA-03.2**
-  **Dado** que la meta no existe
-  **cuando** envio la solicitud de eliminacion
-  **entonces** el sistema informa que la meta no fue encontrada.
+```bash
+cd ruta/al/proyecto/pagoya-api
 
-### 0.3 Reglas de negocio
-
-| Codigo     | Regla                                                                                              |
-| ---------- | -------------------------------------------------------------------------------------------------- |
-| **RN-S01** | Un cliente no puede tener dos metas con el mismo nombre.                                            |
-| **RN-S02** | El nombre es obligatorio y no puede superar los 50 caracteres.                                      |
-| **RN-S03** | El monto objetivo debe ser mayor a 0 y no superar 1 000 000.                                        |
-| **RN-S04** | La fecha limite debe ser estrictamente futura (posterior al dia de creacion).                       |
-| **RN-S05** | Solo se pueden registrar metas a nombre de clientes que existen en PagoYa.                          |
-| **RN-S06** | La fecha y hora de creacion la registra automaticamente PagoYa; el cliente no la informa.           |
-
-### 0.4 Modelo del dominio (resumen)
-
-```
-Customer 1 ───< * SavingGoal
-                 - id
-                 - name            (max 50, unico por cliente)
-                 - targetAmount    (> 0, max 1 000 000)
-                 - deadline        (fecha futura)
-                 - createdAt
+git init
+git add .
+git commit -m "chore: initial commit"
+git branch -M main
+git remote add origin https://github.com/<TU_USUARIO>/pagoya-api.git
+git push -u origin main
 ```
 
-> Un `Customer` puede tener muchas `SavingGoal`. Cada `SavingGoal` pertenece a **exactamente un** `Customer` (`@ManyToOne`).
+Reemplaza `<TU_USUARIO>` por tu username de GitHub.
+
+### 0.5 Crear la rama `develop`
+
+Toda nueva feature partira de `develop`, asi que la creas ahora desde la rama `main`:
+
+```bash
+git checkout -b develop
+git push -u origin develop
+```
+
+Tu repo queda con DOS ramas: `main` (produccion) y `develop` (integracion). De ahora en adelante, cada feature parte de `develop`.
+
+[↑ Volver al indice](#indice)
 
 ---
 
-## 1. Crear rama
+## 1. Enunciado
+
+En PagoYa cada cliente puede pagar sus servicios (luz, agua, internet, telefono) directamente desde la billetera. Vas a implementar el bounded context **`billing/`** con dos agregados que ya nacen juntos: un **catalogo de proveedores** y un **registro de los pagos** que cada cliente realiza.
+
+[↑ Volver al indice](#indice)
+
+## 2. Objetivos
+
+- Aplicar **package by feature** y montar un bounded context con DOS clases de modelo.
+- Aplicar **DDD**: `ServiceProvider` (catalogo compartido) + `BillPayment` (transaccional por cliente).
+- Aplicar **buenas practicas**: `@Transactional(readOnly)`, Bean Validation, excepciones de dominio, FK validas.
+- Documentar la API con **Swagger / OpenAPI**.
+- Practicar **GitFlow**: rama `feature/*`, Pull Request a `develop`.
+
+[↑ Volver al indice](#indice)
+
+## 3. Historias de usuario
+
+| Codigo | Historia |
+|---|---|
+| **US-B01** | Como cliente quiero ver el catalogo de proveedores activos para elegir a quien pagarle. |
+| **US-B02** | Como cliente quiero registrar el pago de un servicio para saldar mi recibo desde la app. |
+| **US-B03** | Como cliente quiero ver mis pagos paginados para revisar mi historial. |
+| **US-B04** | Como cliente quiero ver mis pagos agrupados por categoria para entender en que gasto mas. |
+
+[↑ Volver al indice](#indice)
+
+## 4. Reglas de negocio
+
+| Codigo | Regla |
+|---|---|
+| **RN-B01** | Solo se puede pagar a proveedores que esten activos. Los proveedores suspendidos o dados de baja no aceptan pagos. |
+| **RN-B02** | El monto a pagar debe ser mayor a cero soles y no puede superar los cinco mil soles (limite de seguridad). |
+| **RN-B03** | Un cliente no puede pagar dos veces el mismo recibo al mismo proveedor. |
+| **RN-B04** | La fecha y hora del pago se registran automaticamente cuando se procesa. |
+| **RN-B05** | Si el pago se completa correctamente, queda en estado "PAGADO" de inmediato. |
+| **RN-B06** | El cliente debe existir y estar registrado en PagoYa para poder pagar. |
+
+[↑ Volver al indice](#indice)
+
+## 5. Modelo del dominio
+
+| Dominio | Modelos | Que representa |
+|---|---|---|
+| `customer/` | `Customer` | Cliente de PagoYa. |
+| `billing/` | `ServiceProvider` | Catalogo de empresas a las que se les puede pagar. |
+| `billing/` | `BillPayment` | Cada pago que un cliente registra a un proveedor. |
+
+```
+[ customer ]              [ billing ]
+
+   Customer 1 ────<  *  BillPayment  *  >────  1  ServiceProvider
+                         - billCode                 - name
+                         - amount                   - category
+                         - status                   - active
+                         - paidAt                   - createdAt
+                         - createdAt
+```
+
+[↑ Volver al indice](#indice)
+
+---
+
+## 6. Levantar la infraestructura
+
+El proyecto ya tiene `compose.yml` con PostgreSQL y pgAdmin listos.
+
+### 6.1 Levantar los contenedores
+
+Desde la raiz del proyecto:
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+Debes ver dos contenedores corriendo: `pagoya_db` y `pagoya_pgadmin`.
+
+### 6.2 Datos de los servicios
+
+| Servicio | URL host | Usuario | Password |
+|---|---|---|---|
+| PostgreSQL | `localhost:55432` (BD `pagoya_db`) | `postgres` | `postgres` |
+| pgAdmin | `http://localhost:8082` | `admin@pagoya.com` | `admin` |
+
+### 6.3 Crear el server en pgAdmin
+
+1. Abre `http://localhost:8082` y entra con `admin@pagoya.com / admin`.
+2. Click derecho en **Servers → Register → Server...**
+3. **General → Name**: `pagoya-local`.
+4. **Connection**, completa con estos datos:
+
+   | Campo | Valor |
+   |---|---|
+   | Host name/address | `postgres` |
+   | Port | `5432` |
+   | Maintenance database | `pagoya_db` |
+   | Username | `postgres` |
+   | Password | `postgres` |
+
+5. Click **Save**.
+
+Importante: el host es `postgres` (nombre del servicio en `compose.yml`), NO `localhost`. pgAdmin se conecta a Postgres por la red interna de Docker.
+
+### 6.4 Variables de entorno
+
+El `.env` del proyecto ya tiene `DB_URL`, `DB_USERNAME` y `DB_PASSWORD`. No necesitas modificarlo.
+
+[↑ Volver al indice](#indice)
+
+---
+
+## 7. Crear la rama
 
 ```bash
 git checkout develop
-git checkout -b feature/saving-goal-context
+git pull origin develop
+git checkout -b feature/billing-context
 ```
+
+[↑ Volver al indice](#indice)
 
 ---
 
-## 2. Estructura a crear
-
-Dentro de `src/main/java/com/hampcode/pagoya/` se crea el paquete `savinggoal/` con la misma estructura que los otros bounded contexts:
+## 8. Estructura del paquete
 
 ```
-savinggoal/
-|-- controller/   <- SavingGoalController
-|-- service/      <- ISavingGoalService, SavingGoalService
-|-- repository/   <- SavingGoalRepository
-|-- model/        <- SavingGoal
-|-- dto/          <- CreateSavingGoalRequest, SavingGoalResponse
-|-- mapper/       <- SavingGoalMapper
-`-- exception/    <- DuplicateGoalNameException
+src/main/java/com/hampcode/pagoya/billing/
+├── controller/
+│   ├── ServiceProviderController.java
+│   └── BillPaymentController.java
+├── service/
+│   ├── IServiceProviderService.java   ServiceProviderService.java
+│   └── IBillPaymentService.java       BillPaymentService.java
+├── repository/
+│   ├── ServiceProviderRepository.java
+│   └── BillPaymentRepository.java
+├── model/
+│   ├── ServiceProvider.java   ProviderCategory.java
+│   └── BillPayment.java       PaymentStatus.java
+├── dto/
+│   ├── ServiceProviderResponse.java
+│   ├── CreateBillPaymentRequest.java
+│   ├── BillPaymentResponse.java
+│   └── PaymentByCategoryResponse.java
+├── mapper/
+│   ├── ServiceProviderMapper.java
+│   └── BillPaymentMapper.java
+└── exception/
+    ├── InactiveProviderException.java
+    └── DuplicateBillPaymentException.java
 ```
+
+[↑ Volver al indice](#indice)
 
 ---
 
-## 3. Archivos (con su ubicacion exacta)
+## 9. Implementar `ServiceProvider` (catalogo)
 
-### 3.1 `model/SavingGoal.java`
+### 9.1 `model/ProviderCategory.java`
+
+Enum con las categorias del catalogo. Cada proveedor pertenece a una.
+
 ```java
-package com.hampcode.pagoya.savinggoal.model;
+package com.hampcode.pagoya.billing.model;
+
+public enum ProviderCategory {
+    UTILITIES, TELECOM, INTERNET, CABLE_TV, OTHER
+}
+```
+
+### 9.2 `model/ServiceProvider.java`
+
+La entidad. Representa un proveedor que aparece en el catalogo. Es compartido — todos los clientes ven el mismo catalogo.
+
+```java
+package com.hampcode.pagoya.billing.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "service_providers")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class ServiceProvider {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 100)
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private ProviderCategory category;
+
+    @Column(nullable = false)
+    private boolean active;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+}
+```
+
+### 9.3 `repository/ServiceProviderRepository.java`
+
+El repositorio. `findByActiveTrue` filtra solo proveedores activos (RN-B01).
+
+```java
+package com.hampcode.pagoya.billing.repository;
+
+import com.hampcode.pagoya.billing.model.ServiceProvider;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface ServiceProviderRepository extends JpaRepository<ServiceProvider, Long> {
+    Page<ServiceProvider> findByActiveTrue(Pageable pageable);
+}
+```
+
+### 9.4 `dto/ServiceProviderResponse.java`
+
+DTO de salida. Solo expone `id`, `name` y `category`. NO incluye `active` ni `createdAt` porque son metadatos internos.
+
+```java
+package com.hampcode.pagoya.billing.dto;
+
+public record ServiceProviderResponse(
+    Long id,
+    String name,
+    String category
+) {}
+```
+
+### 9.5 `mapper/ServiceProviderMapper.java`
+
+Convierte `ServiceProvider` → `ServiceProviderResponse`.
+
+```java
+package com.hampcode.pagoya.billing.mapper;
+
+import com.hampcode.pagoya.billing.dto.ServiceProviderResponse;
+import com.hampcode.pagoya.billing.model.ServiceProvider;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+@Mapper(componentModel = "spring")
+public interface ServiceProviderMapper {
+    @Mapping(target = "category", expression = "java(p.getCategory().name())")
+    ServiceProviderResponse toResponse(ServiceProvider p);
+}
+```
+
+Por que ese `@Mapping`: el DTO tiene `category` como `String` pero la entity lo tiene como enum `ProviderCategory`. MapStruct no convierte enum → String solo, asi que con `expression = "java(...)"` le decimos como hacerlo (`p.getCategory().name()`).
+
+### 9.6 Excepciones
+
+En esta etapa `ServiceProvider` solo expone una operacion de lectura, asi que NO necesita excepciones propias. Si mas adelante agregas POST o PUT podrias necesitar una `DuplicateProviderException` u otra de negocio.
+
+### 9.7 `service/IServiceProviderService.java`
+
+```java
+package com.hampcode.pagoya.billing.service;
+
+import com.hampcode.pagoya.billing.dto.ServiceProviderResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+public interface IServiceProviderService {
+    Page<ServiceProviderResponse> findAllActive(Pageable pageable);
+}
+```
+
+### 9.8 `service/ServiceProviderService.java`
+
+Implementacion. Cada metodo declara su propio `@Transactional` (no a nivel de clase).
+
+```java
+package com.hampcode.pagoya.billing.service;
+
+import com.hampcode.pagoya.billing.dto.ServiceProviderResponse;
+import com.hampcode.pagoya.billing.mapper.ServiceProviderMapper;
+import com.hampcode.pagoya.billing.repository.ServiceProviderRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class ServiceProviderService implements IServiceProviderService {
+
+    private final ServiceProviderRepository providerRepository;
+    private final ServiceProviderMapper providerMapper;
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ServiceProviderResponse> findAllActive(Pageable pageable) {
+        return providerRepository.findByActiveTrue(pageable)
+            .map(providerMapper::toResponse);
+    }
+}
+```
+
+### 9.9 `controller/ServiceProviderController.java`
+
+Expone el listado paginado en `GET /api/service-providers`. Anotaciones de Swagger lo documentan.
+
+```java
+package com.hampcode.pagoya.billing.controller;
+
+import com.hampcode.pagoya.billing.dto.ServiceProviderResponse;
+import com.hampcode.pagoya.billing.service.IServiceProviderService;
+import com.hampcode.pagoya.shared.pagination.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/service-providers")
+@RequiredArgsConstructor
+@Tag(name = "Service Providers", description = "Catalogo de proveedores de servicios")
+public class ServiceProviderController {
+
+    private final IServiceProviderService providerService;
+
+    @Operation(summary = "Listar proveedores activos")
+    @GetMapping
+    public ResponseEntity<PageResponse<ServiceProviderResponse>> findAll(
+            @PageableDefault(size = 20, sort = "name") Pageable pageable) {
+        return ResponseEntity.ok(
+            PageResponse.from(providerService.findAllActive(pageable)));
+    }
+}
+```
+
+[↑ Volver al indice](#indice)
+
+---
+
+## 10. Implementar `BillPayment` (transaccional)
+
+### 10.1 `model/PaymentStatus.java`
+
+Enum con los estados que puede tener un pago.
+
+```java
+package com.hampcode.pagoya.billing.model;
+
+public enum PaymentStatus {
+    PAID, FAILED, REFUNDED
+}
+```
+
+### 10.2 `model/BillPayment.java`
+
+La entidad transaccional. Tiene FKs a `Customer` y a `ServiceProvider`. La restriccion `unique(customer_id, provider_id, bill_code)` apoya RN-B03 a nivel de tabla.
+
+```java
+package com.hampcode.pagoya.billing.model;
 
 import com.hampcode.pagoya.customer.model.Customer;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "saving_goals",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"customer_id","name"}))
+@Table(name = "bill_payments",
+       uniqueConstraints = @UniqueConstraint(
+           columnNames = {"customer_id", "provider_id", "bill_code"}))
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class SavingGoal {
+public class BillPayment {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -170,146 +472,192 @@ public class SavingGoal {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
-    @Column(nullable = false, length = 50)
-    private String name;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "provider_id", nullable = false)
+    private ServiceProvider provider;
 
-    @Column(name = "target_amount", nullable = false, precision = 12, scale = 2)
-    private BigDecimal targetAmount;
+    @Column(name = "bill_code", nullable = false, length = 50)
+    private String billCode;
 
-    @Column(nullable = false)
-    private LocalDate deadline;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal amount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PaymentStatus status;
+
+    @Column(name = "paid_at", nullable = false)
+    private LocalDateTime paidAt;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }
 ```
-> El cliente se referencia con `@ManyToOne` a la entidad `Customer` (no con `Long`). JPA crea la columna `customer_id` como FK real. La restriccion `unique(customer_id, name)` apoya la RN-S01 a nivel de base de datos.
 
-### 3.2 `repository/SavingGoalRepository.java`
+### 10.3 `repository/BillPaymentRepository.java`
+
+`existsBy...` valida pagos duplicados (RN-B03). `findByCustomer_Id` es la lista paginada del historial.
+
 ```java
-package com.hampcode.pagoya.savinggoal.repository;
+package com.hampcode.pagoya.billing.repository;
 
-import com.hampcode.pagoya.savinggoal.model.SavingGoal;
+import com.hampcode.pagoya.billing.model.BillPayment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface SavingGoalRepository extends JpaRepository<SavingGoal, Long> {
-    boolean existsByCustomer_IdAndName(Long customerId, String name);
-    Page<SavingGoal> findByCustomer_Id(Long customerId, Pageable pageable);
+public interface BillPaymentRepository extends JpaRepository<BillPayment, Long> {
+    boolean existsByCustomer_IdAndProvider_IdAndBillCode(
+        Long customerId, Long providerId, String billCode);
+    Page<BillPayment> findByCustomer_Id(Long customerId, Pageable pageable);
 }
 ```
-> La sintaxis `Customer_Id` le dice a Spring Data JPA que navegue de `savingGoal.customer.id` (es lo mismo que escribir `WHERE g.customer.id = ?`).
 
-### 3.3 DTOs — `dto/CreateSavingGoalRequest.java`
+### 10.4 `dto/CreateBillPaymentRequest.java`
+
+DTO de entrada con validaciones declarativas (Bean Validation). Cumple RN-B02 con `@DecimalMin/Max`.
+
 ```java
-package com.hampcode.pagoya.savinggoal.dto;
+package com.hampcode.pagoya.billing.dto;
 
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
-public record CreateSavingGoalRequest(
-    @NotNull(message = "el customerId es obligatorio")
-    Long customerId,
-
-    @NotBlank(message = "el nombre es obligatorio")
-    @Size(max = 50, message = "el nombre no puede exceder 50 caracteres")
-    String name,
-
-    @NotNull(message = "el monto objetivo es obligatorio")
-    @DecimalMin(value = "0.01", message = "el monto objetivo debe ser mayor a 0")
-    @DecimalMax(value = "1000000.00", message = "el monto objetivo no puede superar 1 000 000")
-    BigDecimal targetAmount,
-
-    @NotNull(message = "la fecha limite es obligatoria")
-    @Future(message = "la fecha limite debe ser futura")
-    LocalDate deadline
+public record CreateBillPaymentRequest(
+    @NotNull Long customerId,
+    @NotNull Long providerId,
+    @NotBlank @Size(max = 50) String billCode,
+    @NotNull
+    @DecimalMin(value = "0.01", message = "el monto debe ser mayor a 0")
+    @DecimalMax(value = "5000.00", message = "el monto no puede superar 5000")
+    BigDecimal amount
 ) {}
 ```
-> Aqui practicamos validaciones variadas: texto (`@NotBlank`, `@Size`), numero (`@DecimalMin`, `@DecimalMax`) y fecha (`@Future`). El framework las valida automaticamente cuando el controller usa `@Valid`.
 
-### 3.4 DTOs — `dto/SavingGoalResponse.java`
+### 10.5 `dto/BillPaymentResponse.java`
+
+DTO de salida. Solo expone el nombre del proveedor (no su id), no expone `customerId` ni FK alguna.
+
 ```java
-package com.hampcode.pagoya.savinggoal.dto;
+package com.hampcode.pagoya.billing.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-public record SavingGoalResponse(
+public record BillPaymentResponse(
     Long id,
-    String name,
-    BigDecimal targetAmount,
-    LocalDate deadline
+    String providerName,
+    String billCode,
+    BigDecimal amount,
+    String status,
+    LocalDateTime paidAt
 ) {}
 ```
-> Notar: **no expone `customerId` ni `createdAt`** porque el cliente no los necesita ver. Esto es justo el sentido de tener Response DTO.
 
-### 3.5 `mapper/SavingGoalMapper.java`
+### 10.6 `mapper/BillPaymentMapper.java`
+
+Convierte DTO ↔ Entity en ambos sentidos.
+
 ```java
-package com.hampcode.pagoya.savinggoal.mapper;
+package com.hampcode.pagoya.billing.mapper;
 
-import com.hampcode.pagoya.savinggoal.dto.CreateSavingGoalRequest;
-import com.hampcode.pagoya.savinggoal.dto.SavingGoalResponse;
-import com.hampcode.pagoya.savinggoal.model.SavingGoal;
+import com.hampcode.pagoya.billing.dto.BillPaymentResponse;
+import com.hampcode.pagoya.billing.dto.CreateBillPaymentRequest;
+import com.hampcode.pagoya.billing.model.BillPayment;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
-public interface SavingGoalMapper {
+public interface BillPaymentMapper {
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "customer", ignore = true)   // lo carga el service desde CustomerRepository
+    @Mapping(target = "id",        ignore = true)
+    @Mapping(target = "customer",  ignore = true)
+    @Mapping(target = "provider",  ignore = true)
+    @Mapping(target = "status",    ignore = true)
+    @Mapping(target = "paidAt",    ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    SavingGoal toEntity(CreateSavingGoalRequest request);
+    BillPayment toEntity(CreateBillPaymentRequest request);
 
-    SavingGoalResponse toResponse(SavingGoal goal);
+    @Mapping(target = "providerName", source = "provider.name")
+    @Mapping(target = "status", expression = "java(p.getStatus().name())")
+    BillPaymentResponse toResponse(BillPayment p);
 }
 ```
-> El mapper es un **bean Spring** (`@Mapper(componentModel = "spring")`). MapStruct genera la implementacion en `target/generated-sources/`. Como `SavingGoal.customer` es una entidad (`Customer`), el mapper la **ignora**: el service hace `customerRepository.findById(...)` y la asigna antes de guardar.
 
-### 3.6 Excepciones — `exception/DuplicateGoalNameException.java`
+Por que esos `@Mapping`:
+- En `toEntity`: los seis `ignore = true` indican que MapStruct NO debe copiar esos campos del DTO. El service los completa: `id` lo asigna la BD; `customer` y `provider` los carga el service desde sus repos; `status`, `paidAt` y `createdAt` los pone el sistema.
+- En `toResponse`: `source = "provider.name"` navega de la entity al campo `name` del proveedor. `expression` convierte el enum `status` a `String` (igual que en el ServiceProviderMapper).
+
+### 10.7 Excepciones
+
+Dos excepciones de negocio: una para cuando el proveedor no esta activo (RN-B01) y otra para pagos duplicados (RN-B03). Heredan de `BusinessRuleException`, asi el `GlobalExceptionHandler` las atrapa con HTTP 400.
+
+`exception/InactiveProviderException.java`:
+
 ```java
-package com.hampcode.pagoya.savinggoal.exception;
+package com.hampcode.pagoya.billing.exception;
 
 import com.hampcode.pagoya.shared.exception.BusinessRuleException;
 
-public class DuplicateGoalNameException extends BusinessRuleException {
-    public DuplicateGoalNameException(String name) {
-        super("ya tienes una meta con el nombre '" + name + "'");
+public class InactiveProviderException extends BusinessRuleException {
+    public InactiveProviderException() {
+        super("el proveedor seleccionado no esta disponible");
     }
 }
 ```
 
-### 3.7 `service/ISavingGoalService.java`
+`exception/DuplicateBillPaymentException.java`:
+
 ```java
-package com.hampcode.pagoya.savinggoal.service;
+package com.hampcode.pagoya.billing.exception;
 
-import com.hampcode.pagoya.savinggoal.dto.CreateSavingGoalRequest;
-import com.hampcode.pagoya.savinggoal.dto.SavingGoalResponse;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.hampcode.pagoya.shared.exception.BusinessRuleException;
 
-public interface ISavingGoalService {
-    SavingGoalResponse create(CreateSavingGoalRequest request);
-    Page<SavingGoalResponse> findByCustomer(Long customerId, Pageable pageable);
-    void delete(Long id);
+public class DuplicateBillPaymentException extends BusinessRuleException {
+    public DuplicateBillPaymentException() {
+        super("ya tienes registrado un pago para este recibo");
+    }
 }
 ```
 
-### 3.8 `service/SavingGoalService.java`
-```java
-package com.hampcode.pagoya.savinggoal.service;
+### 10.8 `service/IBillPaymentService.java`
 
+Interface del servicio.
+
+```java
+package com.hampcode.pagoya.billing.service;
+
+import com.hampcode.pagoya.billing.dto.BillPaymentResponse;
+import com.hampcode.pagoya.billing.dto.CreateBillPaymentRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+public interface IBillPaymentService {
+    BillPaymentResponse pay(CreateBillPaymentRequest request);
+    Page<BillPaymentResponse> findByCustomer(Long customerId, Pageable pageable);
+}
+```
+
+### 10.9 `service/BillPaymentService.java`
+
+Implementacion. Es el corazon de la logica: valida cliente, valida proveedor activo, valida no-duplicado, y registra el pago.
+
+```java
+package com.hampcode.pagoya.billing.service;
+
+import com.hampcode.pagoya.billing.dto.BillPaymentResponse;
+import com.hampcode.pagoya.billing.dto.CreateBillPaymentRequest;
+import com.hampcode.pagoya.billing.exception.DuplicateBillPaymentException;
+import com.hampcode.pagoya.billing.exception.InactiveProviderException;
+import com.hampcode.pagoya.billing.mapper.BillPaymentMapper;
+import com.hampcode.pagoya.billing.model.BillPayment;
+import com.hampcode.pagoya.billing.model.PaymentStatus;
+import com.hampcode.pagoya.billing.model.ServiceProvider;
+import com.hampcode.pagoya.billing.repository.BillPaymentRepository;
+import com.hampcode.pagoya.billing.repository.ServiceProviderRepository;
 import com.hampcode.pagoya.customer.model.Customer;
 import com.hampcode.pagoya.customer.repository.CustomerRepository;
-import com.hampcode.pagoya.savinggoal.dto.CreateSavingGoalRequest;
-import com.hampcode.pagoya.savinggoal.dto.SavingGoalResponse;
-import com.hampcode.pagoya.savinggoal.exception.DuplicateGoalNameException;
-import com.hampcode.pagoya.savinggoal.mapper.SavingGoalMapper;
-import com.hampcode.pagoya.savinggoal.model.SavingGoal;
-import com.hampcode.pagoya.savinggoal.repository.SavingGoalRepository;
 import com.hampcode.pagoya.shared.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -321,60 +669,68 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class SavingGoalService implements ISavingGoalService {
+public class BillPaymentService implements IBillPaymentService {
 
-    private final SavingGoalRepository savingGoalRepository;
+    private final BillPaymentRepository billPaymentRepository;
+    private final ServiceProviderRepository providerRepository;
     private final CustomerRepository customerRepository;
-    private final SavingGoalMapper savingGoalMapper;
+    private final BillPaymentMapper billPaymentMapper;
 
     @Override
     @Transactional
-    public SavingGoalResponse create(CreateSavingGoalRequest request) {
-        // 1) cargar el Customer (existe?) para asociarlo a la entidad
+    public BillPaymentResponse pay(CreateBillPaymentRequest request) {
         Customer customer = customerRepository.findById(request.customerId())
-            .orElseThrow(() -> new ResourceNotFoundException(
-                "cliente con id " + request.customerId() + " no encontrado"));
+            .orElseThrow(() -> new ResourceNotFoundException("cliente no encontrado"));
 
-        // RN-S01: nombre unico por cliente
-        if (savingGoalRepository.existsByCustomer_IdAndName(customer.getId(), request.name()))
-            throw new DuplicateGoalNameException(request.name());
+        ServiceProvider provider = providerRepository.findById(request.providerId())
+            .orElseThrow(() -> new ResourceNotFoundException("proveedor no encontrado"));
 
-        SavingGoal entity = savingGoalMapper.toEntity(request);
-        entity.setCustomer(customer);                  // ← asocia la entidad real
+        if (!provider.isActive()) {
+            throw new InactiveProviderException();
+        }
+
+        if (billPaymentRepository.existsByCustomer_IdAndProvider_IdAndBillCode(
+                customer.getId(), provider.getId(), request.billCode())) {
+            throw new DuplicateBillPaymentException();
+        }
+
+        BillPayment entity = billPaymentMapper.toEntity(request);
+        entity.setCustomer(customer);
+        entity.setProvider(provider);
+        entity.setStatus(PaymentStatus.PAID);
+        entity.setPaidAt(LocalDateTime.now());
         entity.setCreatedAt(LocalDateTime.now());
-        return savingGoalMapper.toResponse(savingGoalRepository.save(entity));
+
+        return billPaymentMapper.toResponse(billPaymentRepository.save(entity));
     }
 
     @Override
-    public Page<SavingGoalResponse> findByCustomer(Long customerId, Pageable pageable) {
-        return savingGoalRepository.findByCustomer_Id(customerId, pageable)
-            .map(savingGoalMapper::toResponse);
-    }
-
-    @Override
-    @Transactional
-    public void delete(Long id) {
-        if (!savingGoalRepository.existsById(id))
-            throw new ResourceNotFoundException("meta " + id + " no encontrada");
-        savingGoalRepository.deleteById(id);
+    @Transactional(readOnly = true)
+    public Page<BillPaymentResponse> findByCustomer(Long customerId, Pageable pageable) {
+        if (!customerRepository.existsById(customerId)) {
+            throw new ResourceNotFoundException("cliente no encontrado");
+        }
+        return billPaymentRepository.findByCustomer_Id(customerId, pageable)
+            .map(billPaymentMapper::toResponse);
     }
 }
 ```
-> **Nota didactica**: el `SavingGoalMapper` *no* sabe convertir un `Long customerId` (DTO) a un `Customer` (entidad), porque no tiene acceso al `CustomerRepository`. Por eso el service:
-> 1. Hace `customerRepository.findById(...)` y valida que exista.
-> 2. Llama al mapper con `toEntity(request)` (sin el customer).
-> 3. Asigna `entity.setCustomer(customer)` antes de `save`.
->
-> Asi se respeta la separacion: **el mapper solo transforma estructura, el service decide reglas de negocio**.
 
-### 3.9 `controller/SavingGoalController.java`
+### 10.10 `controller/BillPaymentController.java`
+
+Expone los dos endpoints: POST para crear y GET paginado para listar el historial.
+
 ```java
-package com.hampcode.pagoya.savinggoal.controller;
+package com.hampcode.pagoya.billing.controller;
 
-import com.hampcode.pagoya.savinggoal.dto.CreateSavingGoalRequest;
-import com.hampcode.pagoya.savinggoal.dto.SavingGoalResponse;
-import com.hampcode.pagoya.savinggoal.service.ISavingGoalService;
+import com.hampcode.pagoya.billing.dto.BillPaymentResponse;
+import com.hampcode.pagoya.billing.dto.CreateBillPaymentRequest;
+import com.hampcode.pagoya.billing.service.IBillPaymentService;
 import com.hampcode.pagoya.shared.pagination.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -384,143 +740,584 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/saving-goals")
+@RequestMapping("/api/bill-payments")
 @RequiredArgsConstructor
-public class SavingGoalController {
+@Tag(name = "Bill Payments", description = "Pagos de servicios del cliente")
+public class BillPaymentController {
 
-    private final ISavingGoalService savingGoalService;
+    private final IBillPaymentService billPaymentService;
 
+    @Operation(summary = "Registrar un pago")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Pago registrado"),
+        @ApiResponse(responseCode = "400", description = "Datos invalidos o pago duplicado"),
+        @ApiResponse(responseCode = "404", description = "Cliente o proveedor no encontrado")
+    })
     @PostMapping
-    public ResponseEntity<SavingGoalResponse> create(
-            @Valid @RequestBody CreateSavingGoalRequest request) {
+    public ResponseEntity<BillPaymentResponse> pay(
+            @Valid @RequestBody CreateBillPaymentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(savingGoalService.create(request));
+            .body(billPaymentService.pay(request));
     }
 
+    @Operation(summary = "Listar pagos de un cliente (paginado)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista paginada"),
+        @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
+    })
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<PageResponse<SavingGoalResponse>> findByCustomer(
+    public ResponseEntity<PageResponse<BillPaymentResponse>> findByCustomer(
             @PathVariable Long customerId,
             @PageableDefault(size = 10, sort = "id") Pageable pageable) {
         return ResponseEntity.ok(
-            PageResponse.from(savingGoalService.findByCustomer(customerId, pageable)));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        savingGoalService.delete(id);
-        return ResponseEntity.noContent().build();
+            PageResponse.from(billPaymentService.findByCustomer(customerId, pageable)));
     }
 }
 ```
 
+[↑ Volver al indice](#indice)
+
 ---
 
-## 4. Probar en Postman
+## 11. Implementar el reporte por categoria (US-B04)
 
-### 4.1 Variables sugeridas
-Agregalas a la coleccion `pagoya-api` (o reusa las que ya tienes):
+Este paso es parte de la implementacion. Vas a agregar un endpoint adicional al `BillPaymentService` que cruza las dos tablas via stored procedure de PostgreSQL.
 
-| key | value |
+### 11.1 Crear el stored procedure en pgAdmin
+
+1. En pgAdmin, navega a `Servers → pagoya-local → Databases → pagoya_db → Schemas → public → Tables`.
+2. Click derecho sobre **Tables** y elige **Query Tool** (o desde el menu superior: Tools → Query Tool).
+3. Pega el siguiente SQL en el editor:
+
+```sql
+CREATE OR REPLACE FUNCTION sp_payments_by_category(p_customer_id BIGINT)
+RETURNS TABLE (category VARCHAR, total_count BIGINT, total_amount DECIMAL)
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        sp.category::VARCHAR,
+        COUNT(bp.id)::BIGINT,
+        COALESCE(SUM(bp.amount), 0)
+    FROM bill_payments bp
+    JOIN service_providers sp ON sp.id = bp.provider_id
+    WHERE bp.customer_id = p_customer_id
+    GROUP BY sp.category;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+4. Ejecuta con el boton **Execute** (rayo) o presiona `F5`. Veras el mensaje `CREATE FUNCTION` confirmando que se creo.
+
+### 11.2 `dto/PaymentByCategoryResponse.java`
+
+DTO de salida del reporte. Una fila por categoria con su total.
+
+```java
+package com.hampcode.pagoya.billing.dto;
+
+import java.math.BigDecimal;
+
+public record PaymentByCategoryResponse(
+    String category,
+    long totalCount,
+    BigDecimal totalAmount
+) {}
+```
+
+### 11.3 Sumar al `BillPaymentRepository`
+
+Agrega al repositorio una query nativa que invoca al stored procedure.
+
+```java
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import java.util.List;
+
+@Query(value = "SELECT * FROM sp_payments_by_category(:customerId)", nativeQuery = true)
+List<Object[]> getPaymentsByCategory(@Param("customerId") Long customerId);
+```
+
+### 11.4 Sumar al `IBillPaymentService` y a su implementacion
+
+Se agrega un metodo que valida que el cliente exista, ejecuta el stored procedure y mapea cada fila (`Object[]`) al DTO.
+
+En la interface:
+
+```java
+List<PaymentByCategoryResponse> reportByCategory(Long customerId);
+```
+
+En la implementacion:
+
+```java
+@Override
+@Transactional(readOnly = true)
+public List<PaymentByCategoryResponse> reportByCategory(Long customerId) {
+    if (!customerRepository.existsById(customerId)) {
+        throw new ResourceNotFoundException("cliente no encontrado");
+    }
+    return billPaymentRepository.getPaymentsByCategory(customerId).stream()
+        .map(r -> new PaymentByCategoryResponse(
+            (String) r[0],
+            ((Number) r[1]).longValue(),
+            (BigDecimal) r[2]))
+        .toList();
+}
+```
+
+### 11.5 Sumar al `BillPaymentController`
+
+Endpoint nuevo que sirve el reporte.
+
+```java
+@Operation(summary = "Reporte de pagos por categoria")
+@GetMapping("/customer/{customerId}/by-category")
+public ResponseEntity<List<PaymentByCategoryResponse>> reportByCategory(
+        @PathVariable Long customerId) {
+    return ResponseEntity.ok(billPaymentService.reportByCategory(customerId));
+}
+```
+
+[↑ Volver al indice](#indice)
+
+---
+
+## 12. Configurar Swagger / OpenAPI
+
+### 12.1 Verificar dependencias del proyecto
+
+El proyecto ya trae las dependencias clave en `pom.xml`. Solo necesitas agregar la de Swagger.
+
+| Dependencia | Para que sirve | Estado |
+|---|---|---|
+| `lombok` | Genera getters, setters y constructores automaticamente. | Ya en pom.xml |
+| `mapstruct` + `mapstruct-processor` | Genera la implementacion del mapper en compile-time. | Ya en pom.xml |
+| `springdoc-openapi-starter-webmvc-ui` | Activa Swagger UI / OpenAPI en la API. | **Hay que agregarla** |
+
+### 12.2 Agregar la dependencia de Swagger al `pom.xml`
+
+```xml
+<dependency>
+    <groupId>org.springdoc</groupId>
+    <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+    <version>2.7.0</version>
+</dependency>
+```
+
+Despues de pegarla **guarda el archivo (`Cmd/Ctrl + S`)**. En IntelliJ aparecera un boton flotante **"Load Maven Changes"** (o el icono de Maven en la esquina inferior derecha). Click ahi para que descargue la nueva dependencia. En VSCode con la extension de Java: click derecho sobre `pom.xml` → **Reload Project**.
+
+### 12.3 Crear `shared/config/OpenApiConfig.java`
+
+```java
+package com.hampcode.pagoya.shared.config;
+
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class OpenApiConfig {
+    @Bean
+    public OpenAPI pagoyaOpenAPI() {
+        return new OpenAPI().info(new Info()
+            .title("PagoYa API").version("v1")
+            .description("API de la billetera digital PagoYa"));
+    }
+}
+```
+
+### 12.4 URLs tras arrancar
+
+| URL | Para que |
 |---|---|
-| `base_url` | `http://localhost:8080` |
-| `customer_id` | `1` |
-| `goal_id` | `1` |
+| `http://localhost:8080/swagger-ui/index.html` | UI para probar endpoints |
+| `http://localhost:8080/v3/api-docs` | Spec OpenAPI en JSON |
 
-### 4.2 Requests
-
-#### POST — crear meta (camino feliz)
-```
-POST {{base_url}}/api/saving-goals
-Content-Type: application/json
-```
-```json
-{
-  "customerId": {{customer_id}},
-  "name": "Viaje a Cusco",
-  "targetAmount": 2500.00,
-  "deadline": "2026-12-31"
-}
-```
-Esperado: `201 Created` + `SavingGoalResponse` (id, name, targetAmount, deadline).
-
-#### POST — validacion fallida (RN-S02, RN-S03, RN-S04)
-```
-POST {{base_url}}/api/saving-goals
-```
-```json
-{
-  "customerId": {{customer_id}},
-  "name": "",
-  "targetAmount": 0,
-  "deadline": "2020-01-01"
-}
-```
-Esperado: `400 Bad Request` con `ErrorResponse` y `details` listando cada campo invalido.
-
-#### POST — nombre duplicado (RN-S01)
-Repetir el primer POST tal cual. Esperado: `400` con
-`message: "ya tienes una meta con el nombre 'Viaje a Cusco'"`.
-
-#### POST — cliente inexistente (RN-S05)
-```json
-{
-  "customerId": 9999,
-  "name": "Laptop nueva",
-  "targetAmount": 4500.00,
-  "deadline": "2026-10-01"
-}
-```
-Esperado: `404 Not Found` con `message: "cliente con id 9999 no encontrado"`.
-
-#### GET — listar paginado las metas del cliente
-```
-GET {{base_url}}/api/saving-goals/customer/{{customer_id}}?page=0&size=10
-```
-Esperado: `200 OK` con `PageResponse<SavingGoalResponse>` (`content`, `page`, `size`, `totalElements`, `totalPages`, `first`, `last`).
-
-#### DELETE — eliminar una meta
-```
-DELETE {{base_url}}/api/saving-goals/{{goal_id}}
-```
-Esperado: `204 No Content` (sin body).
-
-#### DELETE — meta inexistente
-```
-DELETE {{base_url}}/api/saving-goals/9999
-```
-Esperado: `404 Not Found` con `message: "meta 9999 no encontrada"`.
+[↑ Volver al indice](#indice)
 
 ---
 
-## 5. Compilar y arrancar
+## 13. Ejecutar el proyecto
 
 ```bash
-# 1) compilar
 mvn clean compile
-
-# 2) arrancar la app cargando las variables del .env
 export $(grep -v '^#' .env | xargs) && mvn spring-boot:run
 ```
 
-Hibernate creara la tabla `saving_goals` automaticamente al arrancar (`ddl-auto: update`).
+Hibernate creara `service_providers` y `bill_payments` al arrancar.
+
+### 13.1 Datos de prueba
+
+Para poder probar pagos necesitas proveedores. En pgAdmin (Tools → Query Tool) o `docker exec`:
+
+```sql
+INSERT INTO service_providers (name, category, active, created_at) VALUES
+  ('Sedapal',     'UTILITIES', true, now()),
+  ('Luz del Sur', 'UTILITIES', true, now()),
+  ('Movistar',    'TELECOM',   true, now()),
+  ('Claro',       'TELECOM',   true, now()),
+  ('Win',         'INTERNET',  true, now());
+```
+
+[↑ Volver al indice](#indice)
 
 ---
 
-## 6. Commit y Pull Request
+## 14. Probar la API en Postman
+
+En la seccion 0 ya importaste la coleccion `PagoYa API`. Ahora vas a agregarle el folder y los requests de `billing`.
+
+1. En Postman, abre la coleccion `PagoYa API`.
+2. Click derecho sobre la coleccion → **Add folder** → nombre: `Billing`.
+3. Dentro del folder, agrega estas 4 requests (solo nombre, metodo y URL — el body lo armas guiandote por Swagger UI):
+
+| Nombre | Metodo | URL |
+|---|---|---|
+| Listar proveedores | GET | `http://localhost:8080/api/service-providers` |
+| Pagar un servicio | POST | `http://localhost:8080/api/bill-payments` |
+| Listar mis pagos | GET | `http://localhost:8080/api/bill-payments/customer/{customerId}` |
+| Reporte por categoria | GET | `http://localhost:8080/api/bill-payments/customer/{customerId}/by-category` |
+
+4. Guarda los cambios con `Cmd/Ctrl + S`.
+
+[↑ Volver al indice](#indice)
+
+---
+
+## 15. Commit y Pull Request
+
+### 15.1 Commit y push
 
 ```bash
-git add src/main/java/com/hampcode/pagoya/savinggoal
-git commit -m "feat(saving-goal): metas de ahorro con DTO, mapper y paginacion"
-git push origin feature/saving-goal-context
+git add src/main/java/com/hampcode/pagoya/billing \
+        src/main/java/com/hampcode/pagoya/shared/config/OpenApiConfig.java \
+        pom.xml
+git commit -m "feat(billing): pago de servicios con catalogo y reporte por categoria"
+git push -u origin feature/billing-context
 ```
 
-Abrir el PR en GitHub: **`feature/saving-goal-context` → `develop`**.
+### 15.2 Abrir el PR en GitHub
 
-Titulo sugerido:
-> `feat(saving-goal): metas de ahorro del cliente`
+Crea el Pull Request: `feature/billing-context` → `develop`.
 
-Descripcion sugerida (breve):
-- Nuevo bounded context `saving-goal`.
-- Endpoints: `POST /api/saving-goals`, `GET /api/saving-goals/customer/{id}`, `DELETE /api/saving-goals/{id}`.
-- Aplica DTO + MapStruct + Bean Validation + paginacion.
-- Reglas: nombre unico por cliente (RN-S01), monto y fecha validados (RN-S03, RN-S04).
+**Titulo sugerido:**
+
+```
+feat(billing): pago de servicios (catalogo + pagos + reporte por categoria)
+```
+
+**Descripcion sugerida:**
+
+```markdown
+## Que entrega
+
+Bounded context `billing/` con dos agregados:
+- ServiceProvider: catalogo de proveedores (solo lectura).
+- BillPayment: pagos del cliente (crear, listar paginado, reporte por categoria).
+
+## Endpoints
+
+- GET    /api/service-providers
+- POST   /api/bill-payments
+- GET    /api/bill-payments/customer/{id}
+- GET    /api/bill-payments/customer/{id}/by-category   (stored procedure)
+
+## Reglas de negocio cubiertas
+
+- RN-B01: solo proveedores activos aceptan pagos.
+- RN-B02: monto entre 0.01 y 5000.00 (Bean Validation).
+- RN-B03: no se permiten pagos duplicados (mismo billCode al mismo proveedor).
+- RN-B04 / RN-B05: paidAt y status PAID los pone el sistema.
+
+## Como probarlo
+
+- docker compose up -d
+- mvn spring-boot:run
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+- Coleccion de Postman "PagoYa API → Billing".
+
+## Documentacion
+
+- Swagger / OpenAPI activado con springdoc-openapi 2.7.0.
+```
+
+[↑ Volver al indice](#indice)
+
+---
+
+## 16. Comandos de Git: cuando usar cada uno
+
+Resumen practico — solo recomendaciones de cuando elegir cada comando.
+
+| Comando | Cuando usarlo |
+|---|---|
+| `git status` | A cada paso, para saber donde estas (archivos modificados, en staging, sin trackear). |
+| `git diff` | Antes de commitear, para revisar linea por linea lo que vas a subir. |
+| `git fetch` | Cuando quieres ver que hay nuevo en el remoto SIN aplicarlo todavia a tu rama. Tu codigo local NO se modifica. |
+| `git pull` | Cuando solo necesitas estar al dia y confias en mergear directo. Equivale a `git fetch` + `git merge`. |
+| `git merge` | Para unir otra rama con la tuya. Tipico: traer `develop` a tu feature antes de abrir el PR para evitar conflictos al final. |
+| `git switch` | Para cambiar de rama. Es la version moderna y mas legible que `git checkout`. |
+| `git push` | Despues de tus commits, para subir tu rama al remoto y poder abrir el PR en GitHub. |
+| `git log` | Para revisar el historial de commits: quien hizo que, cuando y en que rama. |
+| `git stash` | Cuando necesitas cambiar de rama urgente y no quieres perder lo que estas haciendo (sin commitear). |
+
+### 16.1 Diferencia clave entre `fetch` y `pull`
+
+`fetch` solo TRAE informacion del remoto a tu copia local de las ramas remotas. NO toca tu rama de trabajo.
+
+`pull` trae Y aplica los cambios. Es la suma de `fetch` + `merge`.
+
+Usa `fetch` cuando quieras inspeccionar antes de mezclar; usa `pull` cuando solo necesites estar al dia.
+
+### 16.2 Resolver conflictos de merge
+
+Pasa cuando dos personas tocan la misma linea. `git merge` o `git pull` no puede decidir y deja el archivo en conflicto. Sigue estos pasos:
+
+| Paso | Comando | Descripcion |
+|---|---|---|
+| 1 | `git status` | Lista los archivos en conflicto (aparecen con `UU`). |
+| 2 | (editar archivo) | Abre cada archivo. Veras los marcadores `<<<<<<<`, `=======`, `>>>>>>>` delimitando los dos lados. Deja el codigo final correcto y borra los marcadores. |
+| 3 | `git add <archivo>` | Marca cada archivo como resuelto. |
+| 4 | `git commit` | Finaliza el merge con un mensaje automatico. |
+| 5 | `git push` | Sube los cambios al remoto. |
+| — | `git merge --abort` | Si te enredas, aborta el merge y vuelve al estado anterior. |
+
+### 16.3 Pasar un feature a `main` (release)
+
+Cuando el feature ya fue mergeado a `develop` y esta listo para produccion, un integrante crea una rama `release/*` y abre el PR a `main`.
+
+| Paso | Comando | Descripcion |
+|---|---|---|
+| 1 | `git checkout develop` | Posicionarse en develop. |
+| 2 | `git pull origin develop` | Traer la version mas reciente. |
+| 3 | `git checkout -b release/v1.X.0` | Crear la rama de release desde develop. |
+| 4 | `git push -u origin release/v1.X.0` | Subir la rama al remoto. |
+| 5 | (en GitHub) | Abrir Pull Request `release/v1.X.0` → `main`. Esperar revision y aprobar. |
+| 6 | `git checkout main` | Despues del merge, cambiar a main local. |
+| 7 | `git pull origin main` | Traer el merge recien aplicado. |
+| 8 | `git tag -a v1.X.0 -m "Release v1.X.0"` | Crear el tag de la version. |
+| 9 | `git push origin v1.X.0` | Subir el tag al remoto. |
+
+### 16.4 Arreglar una falla en `main` (hotfix)
+
+Cuando la version en `main` tiene un bug que NO puede esperar al proximo release, se crea una rama `hotfix/*` desde main, se corrige y se merge de vuelta a `main` y a `develop`.
+
+| Paso | Comando | Descripcion |
+|---|---|---|
+| 1 | `git checkout main` | Posicionarse en main (donde esta la falla). |
+| 2 | `git pull origin main` | Traer la version actual. |
+| 3 | `git checkout -b hotfix/descripcion-corta` | Crear la rama de hotfix DESDE main. |
+| 4 | (corregir el bug + commit) | Hacer la correccion en pocos archivos. Commit con mensaje claro: `fix(...)...`. |
+| 5 | `git push -u origin hotfix/descripcion-corta` | Subir la rama al remoto. |
+| 6 | (en GitHub) | Abrir PR `hotfix/...` → `main`. Aprobar y mergear. |
+| 7 | `git checkout main` y `git pull origin main` | Traer el hotfix mergeado. |
+| 8 | `git tag -a v1.X.1 -m "Hotfix v1.X.1"` y `git push origin v1.X.1` | Taggear con version de parche. |
+| 9 | `git checkout develop` y `git pull origin develop` | Cambiar a develop. |
+| 10 | `git merge main` | Traer el hotfix tambien a develop (asi no se pierde en el proximo release). |
+| 11 | `git push origin develop` | Subir develop actualizado. |
+
+Resumen de las dos diferencias importantes:
+
+| Caso | Rama base | Donde merger al final |
+|---|---|---|
+| Feature normal | `develop` | `develop` (luego release a `main`) |
+| Hotfix | `main` | `main` Y tambien `develop` |
+
+### 16.5 `git rebase`: mantener tu feature al dia con historial limpio
+
+Alternativa a `git merge` cuando quieres traer cambios de `develop` a tu feature SIN crear un commit de merge. `rebase` toma tus commits y los reaplica encima de la version actual de `develop`. El historial queda lineal y mas facil de leer.
+
+| Paso | Comando | Descripcion |
+|---|---|---|
+| 1 | `git fetch origin` | Trae los cambios del remoto sin aplicar. |
+| 2 | `git checkout feature/billing-context` | Posicionarse en tu feature. |
+| 3 | `git rebase origin/develop` | Reaplica tus commits encima de la ultima version de develop. |
+| 4 | (resolver conflictos) | Si aparecen, los resuelves como en 16.2 y luego `git rebase --continue`. |
+| 5 | `git rebase --abort` | Si te enredas, aborta y vuelves al estado anterior. |
+| 6 | `git push --force-with-lease` | Si ya habias pusheado: rebase reescribe tus commits, `--force-with-lease` evita pisar trabajo de otros. |
+
+**Cuando usar rebase (en lugar de `merge`)**:
+- Antes de abrir el PR, para que tu feature aparezca limpio sobre `develop`.
+- Cuando el equipo prefiere historial lineal.
+
+**Cuando NO usar rebase**:
+- En ramas compartidas (`develop`, `main`) — reescribe historia y rompe la rama de los demas.
+- Despues de que otros ya jalaron tu rama.
+
+Regla simple: rebase es seguro mientras la rama es **tuya y solo tuya**.
+
+### 16.6 Que hacer si un PR fue enviado de `feature/*` directo a `main`
+
+Pasa cuando un integrante se equivoca de rama base y abre el Pull Request contra `main` en lugar de `develop`. Tienes dos casos: que aun NO se haya mergeado, o que ya se haya mergeado por error.
+
+**Caso A — el PR esta abierto (todavia NO se merge)**
+
+| Paso | Comando / accion | Descripcion |
+|---|---|---|
+| 1 | (en GitHub) | Abrir el PR. En el dropdown `base: main` cambiar a `base: develop`. GitHub recalcula los cambios automaticamente. |
+| 2 | (en GitHub) | Pedir revision, aprobar y mergear como un PR normal a `develop`. |
+
+**Caso B — el PR ya fue mergeado a `main` por error**
+
+El feature quedo en `main` pero NO en `develop`. Hay que sincronizar para que el proximo release no genere conflicto y el feature siga vivo en la rama de integracion.
+
+| Paso | Comando | Descripcion |
+|---|---|---|
+| 1 | `git checkout develop` | Posicionarse en develop. |
+| 2 | `git pull origin develop` | Asegurar que esta al dia. |
+| 3 | `git merge main` | Traer los commits que se mergearon en main. |
+| 4 | (resolver conflictos si aparecen) | Igual que en 16.2. |
+| 5 | `git push origin develop` | Subir develop sincronizado. |
+
+Para evitar que vuelva a pasar, configura en GitHub una **branch protection rule** sobre `main` que prohiba merges directos desde ramas que no sean `release/*` o `hotfix/*` (ver 16.8).
+
+### 16.7 Roles tipicos en el equipo
+
+GitFlow funciona mejor cuando los roles estan claros. Cualquier integrante puede tomar mas de uno segun el tamano del equipo.
+
+| Rol | Responsabilidades | Permisos en GitHub |
+|---|---|---|
+| **Developer** | Implementa features. Abre PRs hacia `develop`. Atiende los comentarios del review. | Write |
+| **Reviewer** | Revisa PRs de sus companeros, aprueba o pide cambios. Cualquier developer puede serlo. | Write |
+| **Tech Lead / Maintainer** | Aprueba PRs criticos, mergea a `develop`, vela por la calidad del codigo. | Maintain |
+| **Release Manager** | Crea ramas `release/*`, mergea a `main`, taggea las versiones. | Maintain o Admin |
+| **Admin** | Configura branch protection, secrets, integraciones (CI, Sonar, etc.). | Admin |
+
+### 16.8 Automatizar el rechazo de PRs no permitidos a `main`
+
+Dos formas de bloquear automaticamente que alguien envie un PR de `feature/*` directo a `main`.
+
+**Opcion A — Branch protection rule (sin codigo, desde la UI de GitHub)**
+
+En el repo: **Settings → Branches → Add branch protection rule**.
+
+| Configuracion | Para que sirve |
+|---|---|
+| Branch name pattern: `main` | Aplica la regla solo a main. |
+| Require a pull request before merging | Prohibe push directo a main. |
+| Require approvals (al menos 1) | Necesita revision antes de mergear. |
+| Require status checks to pass | Los tests / build deben pasar antes de mergear. |
+| Restrict who can push to matching branches | Solo el tech lead o release manager. |
+
+Esto evita push directo a main pero NO restringe la rama origen del PR. Para esto ultimo, suma la Opcion B.
+
+**Opcion B — GitHub Actions que valida la rama origen**
+
+Crea `.github/workflows/validate-pr-source.yml`:
+
+```yaml
+name: Validate PR source branch
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  check-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject if not release/* or hotfix/*
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if [[ ! "$BRANCH" =~ ^(release|hotfix)/ ]]; then
+            echo "::error::PRs a main solo desde release/* o hotfix/*. Tu rama: $BRANCH"
+            exit 1
+          fi
+```
+
+Si alguien abre un PR de `feature/...` → `main`, este workflow falla y el PR queda bloqueado hasta que cambien la rama base a `develop`.
+
+### 16.9 Automatizar el code review
+
+Herramientas que reducen el trabajo manual de revisar PRs.
+
+| Herramienta | Que hace | Documentacion |
+|---|---|---|
+| **GitHub Actions + JaCoCo** | Corre tests y mide cobertura en cada PR. Bloquea el merge si los tests fallan o la cobertura baja. | [GitHub Actions con Maven](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven) · [JaCoCo](https://www.jacoco.org/jacoco/) |
+| **SonarCloud / SonarQube** | Analiza calidad del codigo: bugs, code smells, duplicacion, deuda tecnica. Deja comentarios en el PR. | [SonarQube Cloud](https://docs.sonarsource.com/sonarqube-cloud/) |
+| **Spotless** (plugin Maven) | Formatea automaticamente codigo Java. Bloquea el PR si hay archivos sin formatear. | [Spotless plugin Maven](https://github.com/diffplug/spotless/tree/main/plugin-maven) |
+| **CODEOWNERS** | Archivo que asigna reviewers automaticos segun los archivos modificados. | [About code owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) |
+| **Dependabot** | Crea PRs automaticos para actualizar dependencias vulnerables o desactualizadas. | [Dependabot docs](https://docs.github.com/en/code-security/dependabot) |
+| **CodeRabbit** | IA que comenta el PR senalando posibles bugs, sugiriendo mejoras y resumiendo cambios. | [CodeRabbit](https://www.coderabbit.ai/) |
+| **Copilot Code Review** | Revision automatizada de PRs con IA integrada en GitHub. | [Copilot Code Review](https://docs.github.com/en/copilot/using-github-copilot/code-review/using-copilot-code-review) |
+
+Lo minimo recomendable para arrancar:
+- **Required status checks** en `main` y `develop`: tests + build deben pasar.
+- **CODEOWNERS** para que cada PR asigne reviewer automaticamente.
+- **Dependabot** activado (es gratis en GitHub, dos clicks para configurar).
+
+[↑ Volver al indice](#indice)
+
+---
+
+## 17. Tarea propuesta
+
+Agregar al MISMO dominio `billing/` una tercera entidad: **`RecurringBillPayment`** (pago recurrente programado).
+
+### Justificacion
+
+Es una entidad con peso propio — no puede ser un campo:
+
+- Tiene **estado**: `ACTIVE`, `PAUSED`, `CANCELLED`.
+- Tiene **scheduling**: frecuencia (`MONTHLY`/`WEEKLY`), dia del mes/semana, `nextRunAt`.
+- Tiene **lifecycle**: programar, pausar, reanudar, cancelar.
+- Genera **multiples ejecuciones**: cada run real crea un `BillPayment`.
+
+### Modelo
+
+`RecurringBillPayment` se agrega al MISMO dominio `billing/`. El paquete pasa a tener TRES modelos: `ServiceProvider`, `BillPayment` y `RecurringBillPayment`.
+
+```
+[ customer ]                  [ billing ]                         [ billing ]
+
+   Customer 1 ───<  *  RecurringBillPayment  *  >───  1  ServiceProvider
+                        - id
+                        - billCode
+                        - amount
+                        - frequency       (MONTHLY / WEEKLY)
+                        - dayOfMonth      (1-28, si MONTHLY)
+                        - dayOfWeek       (1-7, si WEEKLY)
+                        - status          (ACTIVE / PAUSED / CANCELLED)
+                        - nextRunAt
+                        - createdAt
+```
+
+### Endpoints a implementar
+
+| Metodo | URL | Que hace | Status |
+|---|---|---|---|
+| POST | `/api/recurring-bill-payments` | Programar un pago recurrente | `201` |
+| GET | `/api/recurring-bill-payments/customer/{id}` | Listar los recurrentes del cliente | `200` |
+| PATCH | `/api/recurring-bill-payments/{id}/pause` | Pausar | `200` |
+| PATCH | `/api/recurring-bill-payments/{id}/resume` | Reanudar | `200` |
+| DELETE | `/api/recurring-bill-payments/{id}` | Cancelar | `204` |
+
+### Reglas de negocio
+
+| Codigo | Regla |
+|---|---|
+| **RN-R01** | Solo se puede programar a un proveedor activo. |
+| **RN-R02** | Si la frecuencia es mensual, se debe indicar el dia del mes (1 al 28). |
+| **RN-R03** | Si la frecuencia es semanal, se debe indicar el dia de la semana (lunes a domingo). |
+| **RN-R04** | Solo se puede pausar un pago que este activo. |
+| **RN-R05** | Solo se puede reanudar un pago que este pausado. |
+| **RN-R06** | No se puede modificar un pago que ya esta cancelado. |
+
+### Lo que vas a practicar
+
+- Agregar una **tercera clase** al mismo bounded context (justifica el nombre `billing/`).
+- Modelar **enums** (`RecurringStatus`, `RecurringFrequency`).
+- Validar **transiciones de estado** en el service.
+- Endpoints **PATCH** para acciones (`pause`, `resume`).
+- Excepciones especificas (ej: `InvalidStatusTransitionException`).
+
+### Reto extra (opcional)
+
+- Implementar el **scheduler real** con `@Scheduled` de Spring: cada hora el sistema busca recurrentes con `nextRunAt <= now()` y crea un `BillPayment` real.
+- Calcular `nextRunAt` correctamente al pausar y reanudar.
+
+### Entrega
+
+Crea la rama `feature/recurring-bill-payments`, implementa la tarea, abre PR a `develop`. Pidele a un companero que lo revise.
+
+[↑ Volver al indice](#indice)
