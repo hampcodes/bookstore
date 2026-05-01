@@ -1,4 +1,4 @@
-# Actividad de Apredizaje: Bounded Context `billing`
+# Actividad de Aprendizaje: Bounded Context `billing`
 
 **Elaborado por:** Henry Antonio Mendoza Puerta
 
