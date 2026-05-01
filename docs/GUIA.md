@@ -8,11 +8,11 @@ Implementar el bounded context `billing/` del proyecto PagoYa API: un catálogo 
 
 Lo que vas a practicar:
 
-- **Package by feature**: organizar el código por dominio en vez de por capa técnica.
-- **DDD**: modelar un bounded context con dos agregados, separando lo que es catálogo compartido de lo que es transaccional por cliente.
-- **Buenas prácticas**: validación declarativa de entrada, transacciones de solo lectura cuando corresponde, excepciones propias del negocio e integridad referencial en la base.
-- **Documentación**: exponer la API auto-documentada para que cualquiera pueda probarla.
-- **GitFlow**: trabajar con feature branches y entregar el cambio mediante Pull Request.
+- **Package by feature**: agrupar el código por funcionalidad.
+- **DDD**: separar el catálogo (compartido) de los pagos (por cliente).
+- **Buenas prácticas**: validar la entrada, controlar los errores y cuidar la base de datos.
+- **Documentación**: dejar la API lista para que otros la prueben.
+- **GitFlow**: trabajar en una rama y entregar con Pull Request.
 
 ## Material previo
 
