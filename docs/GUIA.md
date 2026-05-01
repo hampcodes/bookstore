@@ -1,4 +1,4 @@
-# Actividad de Aprendizaje: Bounded Context `billing`
+# Actividad: Bounded Context `billing`
 
 **Elaborado por:** Henry Antonio Mendoza Puerta
 
@@ -203,10 +203,35 @@ El `.env` del proyecto ya tiene `DB_URL`, `DB_USERNAME` y `DB_PASSWORD`. No nece
 
 ## 7. Ejecutar el proyecto
 
+**macOS / Linux (bash o zsh)**
+
 ```bash
 mvn clean compile
 export $(grep -v '^#' .env | xargs) && mvn spring-boot:run
 ```
+
+**Windows (CMD)**
+
+```cmd
+mvn clean compile
+for /f "usebackq tokens=1,* delims==" %a in (`findstr /v "^#" .env`) do set "%a=%b"
+mvn spring-boot:run
+```
+
+> Si el comando lo metes dentro de un archivo `.bat`, duplica los `%`: `%%a` y `%%b`.
+
+**Windows (PowerShell)**
+
+```powershell
+mvn clean compile
+Get-Content .env | Where-Object { $_ -notmatch '^\s*#' -and $_ -match '=' } | ForEach-Object {
+    $name, $value = $_ -split '=', 2
+    [Environment]::SetEnvironmentVariable($name.Trim(), $value.Trim(), 'Process')
+}
+mvn spring-boot:run
+```
+
+> Como `application-local.yml` ya define valores por defecto que coinciden con el `docker compose` local, si no quieres lidiar con `.env` puedes correr directamente `mvn spring-boot:run` y funciona igual.
 
 Al arrancar, Hibernate crea las tablas `service_providers` y `bill_payments` en la base de datos `pagoya_db` (schema `public`).
 
