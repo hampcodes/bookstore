@@ -1,4 +1,4 @@
-# Actividad: Bounded Context `billing`
+# Actividad de Apredizaje: Bounded Context `billing`
 
 **Elaborado por:** Henry Antonio Mendoza Puerta
 
@@ -449,7 +449,7 @@ public interface IServiceProviderService {
 
 **Logica de negocio**: devolver unicamente los proveedores activos del catalogo (RN-B01).
 
-**Buenas practicas**: `@Transactional(readOnly = true)` por metodo (no a nivel de clase) porque es solo lectura; el mapper se inyecta para no exponer la entidad fuera del service.
+**Buenas practicas**: `@Transactional(readOnly = true)` por metodo (no a nivel de clase) porque es solo lectura. Antes de devolver el resultado, el service convierte la entidad a DTO con el mapper, asi el controller nunca recibe la entidad JPA directamente.
 
 ```java
 package com.hampcode.pagoya.billing.service;
@@ -481,7 +481,7 @@ public class ServiceProviderService implements IServiceProviderService {
 
 ### 10.9 `controller/ServiceProviderController.java`
 
-**Buenas practicas**: el controller no tiene logica, solo orquesta. Recibe `Pageable` desde la URL, devuelve `PageResponse` (estructura comun de paginacion del proyecto) y se documenta con `@Tag` + `@Operation` para Swagger.
+**Buenas practicas**: el controller no tiene logica de negocio, solo orquesta. Recibe `Pageable` desde la URL, devuelve `PageResponse` (estructura comun de paginacion del proyecto) y se documenta con `@Tag` + `@Operation` para Swagger.
 
 ```java
 package com.hampcode.pagoya.billing.controller;
@@ -813,7 +813,7 @@ public class BillPaymentService implements IBillPaymentService {
 
 ### 11.10 `controller/BillPaymentController.java`
 
-**Buenas practicas**: el controller no tiene logica, solo orquesta. `@Valid` activa Bean Validation sobre el body de entrada (RN-B02), `@ApiResponses` documenta los codigos HTTP esperados y el POST devuelve `201 Created` (no `200 OK`).
+**Buenas practicas**: el controller no tiene logica de negocio, solo orquesta. `@Valid` activa Bean Validation sobre el body de entrada (RN-B02), `@ApiResponses` documenta los codigos HTTP esperados y el POST devuelve `201 Created` (no `200 OK`).
 
 ```java
 package com.hampcode.pagoya.billing.controller;
