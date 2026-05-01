@@ -218,8 +218,6 @@ for /f "usebackq tokens=1,* delims==" %a in (`findstr /v "^#" .env`) do set "%a=
 mvn spring-boot:run
 ```
 
-> Si el comando lo metes dentro de un archivo `.bat`, duplica los `%`: `%%a` y `%%b`.
-
 **Windows (PowerShell)**
 
 ```powershell
