@@ -208,7 +208,15 @@ mvn clean compile
 export $(grep -v '^#' .env | xargs) && mvn spring-boot:run
 ```
 
-Hibernate crea `service_providers` y `bill_payments` al arrancar.
+Al arrancar, Hibernate crea las tablas `service_providers` y `bill_payments` en la base de datos `pagoya_db` (schema `public`).
+
+Para verlas en pgAdmin sigue esta ruta:
+
+```
+Servers → pagoya-local → Databases → pagoya_db → Schemas → public → Tables
+```
+
+Ahí debes ver listadas `service_providers` y `bill_payments` junto al resto de tablas del proyecto. Click derecho sobre cualquiera → **View/Edit Data → All Rows** para inspeccionar su contenido.
 
 ### 7.1 Cargar datos de prueba
 
@@ -251,6 +259,41 @@ git checkout -b feature/billing-context
 
 ## 9. Estructura del paquete
 
+### 9.1 Crear el paquete `billing`
+
+Dentro del proyecto, el paquete principal es `com.hampcode.pagoya`. Ahí ya existen otros bounded contexts (`auth`, `customer`, `transfer`, `shared`). Vas a crear uno nuevo al mismo nivel: `billing`.
+
+**En IntelliJ IDEA**
+
+1. Abre el panel **Project** (`Cmd/Alt + 1`).
+2. Navega a `src/main/java/com/hampcode/pagoya`.
+3. Click derecho sobre `pagoya` → **New → Package**.
+4. Nombre: `billing` y `Enter`.
+
+**En VSCode**
+
+1. Click derecho sobre `src/main/java/com/hampcode/pagoya` → **New Folder** → `billing`.
+
+### 9.2 Crear los subpaquetes
+
+Dentro de `billing` crea los siete subpaquetes que agrupan el código por responsabilidad. Repite el paso anterior (click derecho → **New → Package** o **New Folder**) para cada uno:
+
+| Subpaquete | Qué contiene |
+|---|---|
+| `controller` | Recibe la petición HTTP y la delega al service (listar proveedores, registrar pago, ver historial, reporte). |
+| `service` | Reglas de negocio: validar proveedor activo, evitar pagos duplicados, registrar el pago y armar el reporte por categoría. |
+| `repository` | Consultas a la base: proveedores activos, pagos del cliente y verificación de pago duplicado. |
+| `model` | Entidades JPA y enums del dominio. |
+| `dto` | Objetos de entrada y salida de los endpoints. |
+| `mapper` | Conversión entre entidad y DTO con MapStruct. |
+| `exception` | Excepciones propias de las reglas de negocio. |
+
+> En IntelliJ, si escribes `billing.controller` directo en **New → Package**, te crea ambos niveles de un tirón.
+
+### 9.3 Estructura final
+
+Cuando termines, el árbol del paquete debe verse así:
+
 ```
 src/main/java/com/hampcode/pagoya/billing/
 ├── controller/
@@ -277,6 +320,8 @@ src/main/java/com/hampcode/pagoya/billing/
     ├── InactiveProviderException.java
     └── DuplicateBillPaymentException.java
 ```
+
+Por ahora los subpaquetes están vacíos; en las siguientes secciones vas creando las clases una por una.
 
 [↑ Volver al indice](#indice)
 
