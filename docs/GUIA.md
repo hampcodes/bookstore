@@ -29,7 +29,7 @@ Esta actividad ha sido preparada como parte de tu capacitacion. Usala como guia 
 
 ## 0. Setup inicial
 
-Antes de leer el contexto y arrancar a programar, prepara tu entorno y tu repositorio.
+Antes de leer el contexto y comenzar a programar, es importante que prepares tu entorno de desarrollo y configures tu repositorio. Además, se recomienda revisar previamente los materiales Laboratorio_04_Diseno_de_Software_Implementacion_API (Semana 4) y Laboratorio_05_Aplicando_Buenas_Practicas_API (Semana 5), donde se implementa desde cero el proyecto PagoYa API, el cual te servirá como referencia para esta guía.
 
 ### 0.1 Descargar el proyecto
 
