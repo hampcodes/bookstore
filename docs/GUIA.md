@@ -2,24 +2,43 @@
 
 **Elaborado por:** Henry Antonio Mendoza Puerta
 
-Esta actividad es parte de tu capacitación. Úsala como guía para tu proyecto y como material de estudio. Revisa previamente los materiales Laboratorio_04_Diseno_de_Software_Implementacion_API (Semana 4) y Laboratorio_05_Aplicando_Buenas_Practicas_API (Semana 5), donde se desarrolla desde cero el proyecto PagoYa API, que te servirá como referencia.
+## Objetivo
+
+Implementar el bounded context `billing/` del proyecto PagoYa API: un catálogo de proveedores y el registro de pagos del cliente. Al terminar tendrás dos agregados funcionando, la API documentada con Swagger y un Pull Request abierto contra `develop`.
+
+Lo que vas a practicar:
+
+- **Package by feature** y bounded context con dos agregados.
+- **DDD**: `ServiceProvider` (catálogo compartido) + `BillPayment` (transaccional por cliente).
+- **Buenas prácticas**: `@Transactional(readOnly)`, Bean Validation, excepciones de dominio, FK válidas.
+- **Documentación**: Swagger / OpenAPI.
+- **GitFlow**: rama `feature/*`, Pull Request a `develop`.
+
+## Material previo
+
+> **Importante:** esta actividad es la **continuación** del proyecto PagoYa API que se construye en los laboratorios previos. Si no revisas primero estos materiales vas a estar perdido, porque aquí damos por hecho el código y la estructura que se desarrollan ahí.
+
+Antes de empezar, revisa de manera obligatoria los siguientes materiales donde se construye PagoYa API desde cero:
+
+- `Laboratorio_04_Diseno_de_Software_Implementacion_API` (Semana 4)
+- [`Laboratorio_05_Buenas_Practicas_API`](https://github.com/hampcodes/bookstore/blob/main/docs/Laboratorio_05_Buenas_Practicas_API.md) (Semana 5)
+- [`Teoria 5 — Buenas prácticas de diseño de API REST`](https://github.com/hampcodes/bookstore/blob/main/docs/Teoria05-Buenas%20practicas%20api%20rest.md) (Semana 5)
 
 ## Indice
 
-- [0. Setup inicial](#0-setup-inicial)
 - [1. Enunciado](#1-enunciado)
-- [2. Objetivos](#2-objetivos)
-- [3. Historias de usuario](#3-historias-de-usuario)
-- [4. Reglas de negocio](#4-reglas-de-negocio)
-- [5. Modelo del dominio](#5-modelo-del-dominio)
+- [2. Historias de usuario](#2-historias-de-usuario)
+- [3. Reglas de negocio](#3-reglas-de-negocio)
+- [4. Modelo del dominio](#4-modelo-del-dominio)
+- [5. Setup inicial](#5-setup-inicial)
 - [6. Levantar la infraestructura](#6-levantar-la-infraestructura)
-- [7. Crear la rama](#7-crear-la-rama)
-- [8. Estructura del paquete](#8-estructura-del-paquete)
-- [9. Implementar `ServiceProvider` (catalogo)](#9-implementar-serviceprovider-catalogo)
-- [10. Implementar `BillPayment` (transaccional)](#10-implementar-billpayment-transaccional)
-- [11. Implementar el reporte por categoria (US-B04)](#11-implementar-el-reporte-por-categoria-us-b04)
-- [12. Configurar Swagger / OpenAPI](#12-configurar-swagger--openapi)
-- [13. Ejecutar el proyecto](#13-ejecutar-el-proyecto)
+- [7. Ejecutar el proyecto](#7-ejecutar-el-proyecto)
+- [8. Crear la rama](#8-crear-la-rama)
+- [9. Estructura del paquete](#9-estructura-del-paquete)
+- [10. Implementar `ServiceProvider` (catalogo)](#10-implementar-serviceprovider-catalogo)
+- [11. Implementar `BillPayment` (transaccional)](#11-implementar-billpayment-transaccional)
+- [12. Implementar el reporte por categoria (US-B04)](#12-implementar-el-reporte-por-categoria-us-b04)
+- [13. Configurar Swagger / OpenAPI](#13-configurar-swagger--openapi)
 - [14. Probar la API en Postman](#14-probar-la-api-en-postman)
 - [15. Commit y Pull Request](#15-commit-y-pull-request)
 - [16. Comandos de Git: cuando usar cada uno](#16-comandos-de-git-cuando-usar-cada-uno)
@@ -27,80 +46,15 @@ Esta actividad es parte de tu capacitación. Úsala como guía para tu proyecto 
 
 ---
 
-## 0. Setup inicial
+## 1. Enunciado
 
-Antes de leer el contexto y comenzar a programar, es importante que prepares tu entorno de desarrollo y configures tu repositorio. 
-
-### 0.1 Descargar el proyecto
-
-Desde el material de la **semana 5**, descarga el archivo `pagoya-api.zip` y desempaquetalo en una carpeta de tu eleccion.
-
-### 0.2 Importar la coleccion en Postman
-
-1. Abre Postman e **inicia sesion** con tu cuenta. Sin login, las colecciones se pierden al cerrar la app.
-2. En la sidebar click **Import**.
-3. Selecciona el archivo `pagoya-api.postman_collection.json` que viene dentro del proyecto.
-4. La coleccion `PagoYa API` aparecera en tu workspace con los endpoints ya existentes (auth, customer, transfer).
-
-### 0.3 Crear tu repositorio en GitHub
-
-1. Entra a `github.com` y click en **New repository**.
-2. Nombre: `pagoya-api` (o el que prefieras).
-3. Visibilidad: la que tu elijas.
-4. **NO marques** *Add a README file*, *Add .gitignore* ni *Choose a license*. El repo debe quedar VACIO.
-5. Click **Create repository**.
-
-GitHub te mostrara una pagina con los comandos para subir un proyecto existente. Vas a usarlos en el siguiente paso.
-
-### 0.4 Subir el proyecto a tu repositorio
-
-Abre la terminal, entra a la carpeta del proyecto y ejecuta los comandos que GitHub te muestra (los mismos que ves en la pagina del repo recien creado):
-
-```bash
-cd ruta/al/proyecto/pagoya-api
-
-git init
-git add .
-git commit -m "chore: initial commit"
-git branch -M main
-git remote add origin https://github.com/<TU_USUARIO>/pagoya-api.git
-git push -u origin main
-```
-
-Reemplaza `<TU_USUARIO>` por tu username de GitHub.
-
-### 0.5 Crear la rama `develop`
-
-Toda nueva feature partira de `develop`, asi que la creas ahora desde la rama `main`:
-
-```bash
-git checkout -b develop
-git push -u origin develop
-```
-
-Tu repo queda con DOS ramas: `main` (produccion) y `develop` (integracion). De ahora en adelante, cada feature parte de `develop`.
+En PagoYa cada cliente paga sus servicios (luz, agua, internet, telefono) desde la billetera. Vas a implementar el bounded context `billing/` con dos agregados: un **catalogo de proveedores** y el **registro de pagos** que cada cliente realiza.
 
 [↑ Volver al indice](#indice)
 
 ---
 
-## 1. Enunciado
-
-En PagoYa cada cliente puede pagar sus servicios (luz, agua, internet, telefono) directamente desde la billetera. Vas a implementar el bounded context **`billing/`** con dos agregados que ya nacen juntos: un **catalogo de proveedores** y un **registro de los pagos** que cada cliente realiza.
-
-[↑ Volver al indice](#indice)
-
-## 2. Objetivos
-
-- Aplicar **package by feature** y montar un bounded context con DOS clases de modelo.
-- Aplicar **DDD**: `ServiceProvider` (catalogo compartido) + `BillPayment` (transaccional por cliente).
-- Aplicar **buenas practicas**: `@Transactional(readOnly)`, Bean Validation, excepciones de dominio, FK validas.
-- Documentar la API con **Swagger / OpenAPI**.
-- Practicar **GitFlow**: rama `feature/*`, Pull Request a `develop`.
-
-[↑ Volver al indice](#indice)
-
-## 3. Historias de usuario
+## 2. Historias de usuario
 
 | Codigo | Historia |
 |---|---|
@@ -111,20 +65,20 @@ En PagoYa cada cliente puede pagar sus servicios (luz, agua, internet, telefono)
 
 [↑ Volver al indice](#indice)
 
-## 4. Reglas de negocio
+## 3. Reglas de negocio
 
 | Codigo | Regla |
 |---|---|
-| **RN-B01** | Solo se puede pagar a proveedores que esten activos. Los proveedores suspendidos o dados de baja no aceptan pagos. |
-| **RN-B02** | El monto a pagar debe ser mayor a cero soles y no puede superar los cinco mil soles (limite de seguridad). |
+| **RN-B01** | Solo se puede pagar a proveedores activos. |
+| **RN-B02** | El monto debe ser mayor a 0 y no superar los 5000 soles. |
 | **RN-B03** | Un cliente no puede pagar dos veces el mismo recibo al mismo proveedor. |
-| **RN-B04** | La fecha y hora del pago se registran automaticamente cuando se procesa. |
-| **RN-B05** | Si el pago se completa correctamente, queda en estado "PAGADO" de inmediato. |
-| **RN-B06** | El cliente debe existir y estar registrado en PagoYa para poder pagar. |
+| **RN-B04** | La fecha y hora del pago se registran automaticamente. |
+| **RN-B05** | Si el pago se completa, queda en estado `PAID`. |
+| **RN-B06** | El cliente debe existir en PagoYa para poder pagar. |
 
 [↑ Volver al indice](#indice)
 
-## 5. Modelo del dominio
+## 4. Modelo del dominio
 
 | Dominio | Modelos | Que representa |
 |---|---|---|
@@ -142,6 +96,57 @@ En PagoYa cada cliente puede pagar sus servicios (luz, agua, internet, telefono)
                          - paidAt                   - createdAt
                          - createdAt
 ```
+
+[↑ Volver al indice](#indice)
+
+---
+
+## 5. Setup inicial
+
+Prepara tu entorno y tu repositorio.
+
+### 5.1 Descargar el proyecto
+
+Desde el material de la **semana 5**, descarga `pagoya-api.zip` y descomprimelo en una carpeta de tu eleccion.
+
+### 5.2 Importar la coleccion en Postman
+
+1. Abre Postman e **inicia sesion** (sin login se pierde la coleccion al cerrar la app).
+2. Sidebar → **Import**.
+3. Selecciona `pagoya-api.postman_collection.json` que viene en el proyecto.
+
+La coleccion `PagoYa API` aparece con los endpoints existentes (auth, customer, transfer).
+
+### 5.3 Crear tu repositorio en GitHub
+
+1. `github.com` → **New repository**.
+2. Nombre: `pagoya-api`.
+3. **NO marques** *Add a README*, *.gitignore* ni *license*: el repo debe quedar VACIO.
+4. **Create repository**.
+
+### 5.4 Subir el proyecto
+
+Desde la carpeta del proyecto:
+
+```bash
+git init
+git add .
+git commit -m "chore: initial commit"
+git branch -M main
+git remote add origin https://github.com/<TU_USUARIO>/pagoya-api.git
+git push -u origin main
+```
+
+### 5.5 Crear la rama `develop`
+
+Toda nueva feature parte de `develop`:
+
+```bash
+git checkout -b develop
+git push -u origin develop
+```
+
+Tu repo queda con dos ramas: `main` (produccion) y `develop` (integracion).
 
 [↑ Volver al indice](#indice)
 
@@ -196,7 +201,43 @@ El `.env` del proyecto ya tiene `DB_URL`, `DB_USERNAME` y `DB_PASSWORD`. No nece
 
 ---
 
-## 7. Crear la rama
+## 7. Ejecutar el proyecto
+
+```bash
+mvn clean compile
+export $(grep -v '^#' .env | xargs) && mvn spring-boot:run
+```
+
+Hibernate crea `service_providers` y `bill_payments` al arrancar.
+
+### 7.1 Cargar datos de prueba
+
+El proyecto trae los proveedores semilla en:
+
+- `src/main/resources/data.sql`
+
+Como el perfil `local` tiene `sql.init.mode: never`, este archivo NO se carga automatico. Cargalo a mano despues del primer arranque (cuando ya existen las tablas):
+
+**Opcion A — pgAdmin**
+
+1. `pagoya-local` → `pagoya_db` → Tools → Query Tool.
+2. Icono **Open File** y selecciona `src/main/resources/data.sql`.
+3. `F5` para ejecutar.
+
+**Opcion B — psql**
+
+```bash
+psql -h localhost -p 55432 -U postgres -d pagoya_db \
+     -f src/main/resources/data.sql
+```
+
+Inserta los proveedores `Sedapal`, `Luz del Sur`, `Movistar`, `Claro` y `Win`. El `ON CONFLICT (id) DO NOTHING` evita duplicados si lo corres mas de una vez.
+
+[↑ Volver al indice](#indice)
+
+---
+
+## 8. Crear la rama
 
 ```bash
 git checkout develop
@@ -208,7 +249,7 @@ git checkout -b feature/billing-context
 
 ---
 
-## 8. Estructura del paquete
+## 9. Estructura del paquete
 
 ```
 src/main/java/com/hampcode/pagoya/billing/
@@ -241,9 +282,9 @@ src/main/java/com/hampcode/pagoya/billing/
 
 ---
 
-## 9. Implementar `ServiceProvider` (catalogo)
+## 10. Implementar `ServiceProvider` (catalogo)
 
-### 9.1 `model/ProviderCategory.java`
+### 10.1 `model/ProviderCategory.java`
 
 Enum con las categorias del catalogo. Cada proveedor pertenece a una.
 
@@ -255,7 +296,7 @@ public enum ProviderCategory {
 }
 ```
 
-### 9.2 `model/ServiceProvider.java`
+### 10.2 `model/ServiceProvider.java`
 
 La entidad. Representa un proveedor que aparece en el catalogo. Es compartido — todos los clientes ven el mismo catalogo.
 
@@ -289,7 +330,7 @@ public class ServiceProvider {
 }
 ```
 
-### 9.3 `repository/ServiceProviderRepository.java`
+### 10.3 `repository/ServiceProviderRepository.java`
 
 El repositorio. `findByActiveTrue` filtra solo proveedores activos (RN-B01).
 
@@ -306,7 +347,7 @@ public interface ServiceProviderRepository extends JpaRepository<ServiceProvider
 }
 ```
 
-### 9.4 `dto/ServiceProviderResponse.java`
+### 10.4 `dto/ServiceProviderResponse.java`
 
 DTO de salida. Solo expone `id`, `name` y `category`. NO incluye `active` ni `createdAt` porque son metadatos internos.
 
@@ -320,7 +361,7 @@ public record ServiceProviderResponse(
 ) {}
 ```
 
-### 9.5 `mapper/ServiceProviderMapper.java`
+### 10.5 `mapper/ServiceProviderMapper.java`
 
 Convierte `ServiceProvider` → `ServiceProviderResponse`.
 
@@ -341,11 +382,11 @@ public interface ServiceProviderMapper {
 
 Por que ese `@Mapping`: el DTO tiene `category` como `String` pero la entity lo tiene como enum `ProviderCategory`. MapStruct no convierte enum → String solo, asi que con `expression = "java(...)"` le decimos como hacerlo (`p.getCategory().name()`).
 
-### 9.6 Excepciones
+### 10.6 Excepciones
 
 En esta etapa `ServiceProvider` solo expone una operacion de lectura, asi que NO necesita excepciones propias. Si mas adelante agregas POST o PUT podrias necesitar una `DuplicateProviderException` u otra de negocio.
 
-### 9.7 `service/IServiceProviderService.java`
+### 10.7 `service/IServiceProviderService.java`
 
 ```java
 package com.hampcode.pagoya.billing.service;
@@ -359,7 +400,7 @@ public interface IServiceProviderService {
 }
 ```
 
-### 9.8 `service/ServiceProviderService.java`
+### 10.8 `service/ServiceProviderService.java`
 
 Implementacion. Cada metodo declara su propio `@Transactional` (no a nivel de clase).
 
@@ -391,7 +432,7 @@ public class ServiceProviderService implements IServiceProviderService {
 }
 ```
 
-### 9.9 `controller/ServiceProviderController.java`
+### 10.9 `controller/ServiceProviderController.java`
 
 Expone el listado paginado en `GET /api/service-providers`. Anotaciones de Swagger lo documentan.
 
@@ -431,9 +472,9 @@ public class ServiceProviderController {
 
 ---
 
-## 10. Implementar `BillPayment` (transaccional)
+## 11. Implementar `BillPayment` (transaccional)
 
-### 10.1 `model/PaymentStatus.java`
+### 11.1 `model/PaymentStatus.java`
 
 Enum con los estados que puede tener un pago.
 
@@ -445,7 +486,7 @@ public enum PaymentStatus {
 }
 ```
 
-### 10.2 `model/BillPayment.java`
+### 11.2 `model/BillPayment.java`
 
 La entidad transaccional. Tiene FKs a `Customer` y a `ServiceProvider`. La restriccion `unique(customer_id, provider_id, bill_code)` apoya RN-B03 a nivel de tabla.
 
@@ -494,7 +535,7 @@ public class BillPayment {
 }
 ```
 
-### 10.3 `repository/BillPaymentRepository.java`
+### 11.3 `repository/BillPaymentRepository.java`
 
 `existsBy...` valida pagos duplicados (RN-B03). `findByCustomer_Id` es la lista paginada del historial.
 
@@ -513,7 +554,7 @@ public interface BillPaymentRepository extends JpaRepository<BillPayment, Long> 
 }
 ```
 
-### 10.4 `dto/CreateBillPaymentRequest.java`
+### 11.4 `dto/CreateBillPaymentRequest.java`
 
 DTO de entrada con validaciones declarativas (Bean Validation). Cumple RN-B02 con `@DecimalMin/Max`.
 
@@ -535,7 +576,7 @@ public record CreateBillPaymentRequest(
 ) {}
 ```
 
-### 10.5 `dto/BillPaymentResponse.java`
+### 11.5 `dto/BillPaymentResponse.java`
 
 DTO de salida. Solo expone el nombre del proveedor (no su id), no expone `customerId` ni FK alguna.
 
@@ -555,7 +596,7 @@ public record BillPaymentResponse(
 ) {}
 ```
 
-### 10.6 `mapper/BillPaymentMapper.java`
+### 11.6 `mapper/BillPaymentMapper.java`
 
 Convierte DTO ↔ Entity en ambos sentidos.
 
@@ -589,7 +630,7 @@ Por que esos `@Mapping`:
 - En `toEntity`: los seis `ignore = true` indican que MapStruct NO debe copiar esos campos del DTO. El service los completa: `id` lo asigna la BD; `customer` y `provider` los carga el service desde sus repos; `status`, `paidAt` y `createdAt` los pone el sistema.
 - En `toResponse`: `source = "provider.name"` navega de la entity al campo `name` del proveedor. `expression` convierte el enum `status` a `String` (igual que en el ServiceProviderMapper).
 
-### 10.7 Excepciones
+### 11.7 Excepciones
 
 Dos excepciones de negocio: una para cuando el proveedor no esta activo (RN-B01) y otra para pagos duplicados (RN-B03). Heredan de `BusinessRuleException`, asi el `GlobalExceptionHandler` las atrapa con HTTP 400.
 
@@ -621,7 +662,7 @@ public class DuplicateBillPaymentException extends BusinessRuleException {
 }
 ```
 
-### 10.8 `service/IBillPaymentService.java`
+### 11.8 `service/IBillPaymentService.java`
 
 Interface del servicio.
 
@@ -639,7 +680,7 @@ public interface IBillPaymentService {
 }
 ```
 
-### 10.9 `service/BillPaymentService.java`
+### 11.9 `service/BillPaymentService.java`
 
 Implementacion. Es el corazon de la logica: valida cliente, valida proveedor activo, valida no-duplicado, y registra el pago.
 
@@ -716,7 +757,7 @@ public class BillPaymentService implements IBillPaymentService {
 }
 ```
 
-### 10.10 `controller/BillPaymentController.java`
+### 11.10 `controller/BillPaymentController.java`
 
 Expone los dos endpoints: POST para crear y GET paginado para listar el historial.
 
@@ -779,37 +820,51 @@ public class BillPaymentController {
 
 ---
 
-## 11. Implementar el reporte por categoria (US-B04)
+## 12. Implementar el reporte por categoria (US-B04)
 
-Este paso es parte de la implementacion. Vas a agregar un endpoint adicional al `BillPaymentService` que cruza las dos tablas via stored procedure de PostgreSQL.
+Vas a agregar un endpoint que cruza las dos tablas via stored procedure de PostgreSQL.
 
-### 11.1 Crear el stored procedure en pgAdmin
+### 12.1 Cargar el stored procedure
 
-1. En pgAdmin, navega a `Servers → pagoya-local → Databases → pagoya_db → Schemas → public → Tables`.
-2. Click derecho sobre **Tables** y elige **Query Tool** (o desde el menu superior: Tools → Query Tool).
-3. Pega el siguiente SQL en el editor:
+Todos los stored procedures del proyecto estan en:
+
+- `src/main/resources/db/reports.sql`
+
+Alli esta `sp_payments_by_category` (la que necesita este endpoint) junto con otras funciones de reporte. Cargalo despues del primer arranque, cuando Hibernate ya creo las tablas:
+
+**Opcion A — pgAdmin**
+
+1. Tools → Query Tool sobre `pagoya_db`.
+2. **Open File** → selecciona `src/main/resources/db/reports.sql`.
+3. `F5` para ejecutar. Veras varios `CREATE FUNCTION` en el output.
+
+**Opcion B — psql**
+
+```bash
+psql -h localhost -p 55432 -U postgres -d pagoya_db \
+     -f src/main/resources/db/reports.sql
+```
+
+La funcion que usa este endpoint:
 
 ```sql
 CREATE OR REPLACE FUNCTION sp_payments_by_category(p_customer_id BIGINT)
-RETURNS TABLE (category VARCHAR, total_count BIGINT, total_amount DECIMAL)
-AS $$
+RETURNS TABLE(category VARCHAR, total_count BIGINT, total_amount NUMERIC) AS $$
 BEGIN
     RETURN QUERY
-    SELECT
-        sp.category::VARCHAR,
-        COUNT(bp.id)::BIGINT,
-        COALESCE(SUM(bp.amount), 0)
+    SELECT sp.category::VARCHAR,
+           COUNT(bp.id)::BIGINT,
+           COALESCE(SUM(bp.amount), 0)::NUMERIC
     FROM bill_payments bp
     JOIN service_providers sp ON sp.id = bp.provider_id
     WHERE bp.customer_id = p_customer_id
-    GROUP BY sp.category;
+    GROUP BY sp.category
+    ORDER BY total_amount DESC;
 END;
 $$ LANGUAGE plpgsql;
 ```
 
-4. Ejecuta con el boton **Execute** (rayo) o presiona `F5`. Veras el mensaje `CREATE FUNCTION` confirmando que se creo.
-
-### 11.2 `dto/PaymentByCategoryResponse.java`
+### 12.2 `dto/PaymentByCategoryResponse.java`
 
 DTO de salida del reporte. Una fila por categoria con su total.
 
@@ -825,7 +880,7 @@ public record PaymentByCategoryResponse(
 ) {}
 ```
 
-### 11.3 Sumar al `BillPaymentRepository`
+### 12.3 Sumar al `BillPaymentRepository`
 
 Agrega al repositorio una query nativa que invoca al stored procedure.
 
@@ -838,7 +893,7 @@ import java.util.List;
 List<Object[]> getPaymentsByCategory(@Param("customerId") Long customerId);
 ```
 
-### 11.4 Sumar al `IBillPaymentService` y a su implementacion
+### 12.4 Sumar al `IBillPaymentService` y a su implementacion
 
 Se agrega un metodo que valida que el cliente exista, ejecuta el stored procedure y mapea cada fila (`Object[]`) al DTO.
 
@@ -866,7 +921,7 @@ public List<PaymentByCategoryResponse> reportByCategory(Long customerId) {
 }
 ```
 
-### 11.5 Sumar al `BillPaymentController`
+### 12.5 Sumar al `BillPaymentController`
 
 Endpoint nuevo que sirve el reporte.
 
@@ -883,9 +938,9 @@ public ResponseEntity<List<PaymentByCategoryResponse>> reportByCategory(
 
 ---
 
-## 12. Configurar Swagger / OpenAPI
+## 13. Configurar Swagger / OpenAPI
 
-### 12.1 Verificar dependencias del proyecto
+### 13.1 Verificar dependencias del proyecto
 
 El proyecto ya trae las dependencias clave en `pom.xml`. Solo necesitas agregar la de Swagger.
 
@@ -895,7 +950,7 @@ El proyecto ya trae las dependencias clave en `pom.xml`. Solo necesitas agregar 
 | `mapstruct` + `mapstruct-processor` | Genera la implementacion del mapper en compile-time. | Ya en pom.xml |
 | `springdoc-openapi-starter-webmvc-ui` | Activa Swagger UI / OpenAPI en la API. | **Hay que agregarla** |
 
-### 12.2 Agregar la dependencia de Swagger al `pom.xml`
+### 13.2 Agregar la dependencia de Swagger al `pom.xml`
 
 ```xml
 <dependency>
@@ -907,7 +962,7 @@ El proyecto ya trae las dependencias clave en `pom.xml`. Solo necesitas agregar 
 
 Despues de pegarla **guarda el archivo (`Cmd/Ctrl + S`)**. En IntelliJ aparecera un boton flotante **"Load Maven Changes"** (o el icono de Maven en la esquina inferior derecha). Click ahi para que descargue la nueva dependencia. En VSCode con la extension de Java: click derecho sobre `pom.xml` → **Reload Project**.
 
-### 12.3 Crear `shared/config/OpenApiConfig.java`
+### 13.3 Crear `shared/config/OpenApiConfig.java`
 
 ```java
 package com.hampcode.pagoya.shared.config;
@@ -928,38 +983,12 @@ public class OpenApiConfig {
 }
 ```
 
-### 12.4 URLs tras arrancar
+### 13.4 URLs tras arrancar
 
 | URL | Para que |
 |---|---|
 | `http://localhost:8080/swagger-ui/index.html` | UI para probar endpoints |
 | `http://localhost:8080/v3/api-docs` | Spec OpenAPI en JSON |
-
-[↑ Volver al indice](#indice)
-
----
-
-## 13. Ejecutar el proyecto
-
-```bash
-mvn clean compile
-export $(grep -v '^#' .env | xargs) && mvn spring-boot:run
-```
-
-Hibernate creara `service_providers` y `bill_payments` al arrancar.
-
-### 13.1 Datos de prueba
-
-Para poder probar pagos necesitas proveedores. En pgAdmin (Tools → Query Tool) o `docker exec`:
-
-```sql
-INSERT INTO service_providers (name, category, active, created_at) VALUES
-  ('Sedapal',     'UTILITIES', true, now()),
-  ('Luz del Sur', 'UTILITIES', true, now()),
-  ('Movistar',    'TELECOM',   true, now()),
-  ('Claro',       'TELECOM',   true, now()),
-  ('Win',         'INTERNET',  true, now());
-```
 
 [↑ Volver al indice](#indice)
 
