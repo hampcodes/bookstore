@@ -32,17 +32,16 @@ Antes de empezar, revisa de manera obligatoria los siguientes materiales donde s
 - [4. Modelo del dominio](#4-modelo-del-dominio)
 - [5. Setup inicial](#5-setup-inicial)
 - [6. Levantar la infraestructura](#6-levantar-la-infraestructura)
-- [7. Ejecutar el proyecto](#7-ejecutar-el-proyecto)
-- [8. Crear la rama](#8-crear-la-rama)
-- [9. Estructura del paquete](#9-estructura-del-paquete)
-- [10. Implementar `ServiceProvider` (catalogo)](#10-implementar-serviceprovider-catalogo)
-- [11. Implementar `BillPayment` (transaccional)](#11-implementar-billpayment-transaccional)
-- [12. Implementar el reporte por categoria (US-B04)](#12-implementar-el-reporte-por-categoria-us-b04)
-- [13. Configurar Swagger / OpenAPI](#13-configurar-swagger--openapi)
-- [14. Probar la API en Postman](#14-probar-la-api-en-postman)
-- [15. Commit y Pull Request](#15-commit-y-pull-request)
-- [16. Comandos de Git: cuando usar cada uno](#16-comandos-de-git-cuando-usar-cada-uno)
-- [17. Tarea propuesta](#17-tarea-propuesta)
+- [7. Crear la rama](#7-crear-la-rama)
+- [8. Estructura del paquete](#8-estructura-del-paquete)
+- [9. Implementar `ServiceProvider` (catalogo)](#9-implementar-serviceprovider-catalogo)
+- [10. Implementar `BillPayment` (transaccional)](#10-implementar-billpayment-transaccional)
+- [11. Implementar el reporte por categoria (US-B04)](#11-implementar-el-reporte-por-categoria-us-b04)
+- [12. Configurar Swagger / OpenAPI](#12-configurar-swagger--openapi)
+- [13. Probar la API en Postman](#13-probar-la-api-en-postman)
+- [14. Commit y Pull Request](#14-commit-y-pull-request)
+- [15. Comandos de Git: cuando usar cada uno](#15-comandos-de-git-cuando-usar-cada-uno)
+- [16. Tarea propuesta](#16-tarea-propuesta)
 
 ---
 
@@ -167,41 +166,7 @@ docker compose ps
 
 Debes ver dos contenedores corriendo: `pagoya_db` y `pagoya_pgadmin`.
 
-### 6.2 Datos de los servicios
-
-| Servicio | URL host | Usuario | Password |
-|---|---|---|---|
-| PostgreSQL | `localhost:55432` (BD `pagoya_db`) | `postgres` | `postgres` |
-| pgAdmin | `http://localhost:8082` | `admin@pagoya.com` | `admin` |
-
-### 6.3 Crear el server en pgAdmin
-
-1. Abre `http://localhost:8082` y entra con `admin@pagoya.com / admin`.
-2. Click derecho en **Servers → Register → Server...**
-3. **General → Name**: `pagoya-local`.
-4. **Connection**, completa con estos datos:
-
-   | Campo | Valor |
-   |---|---|
-   | Host name/address | `postgres` |
-   | Port | `5432` |
-   | Maintenance database | `pagoya_db` |
-   | Username | `postgres` |
-   | Password | `postgres` |
-
-5. Click **Save**.
-
-Importante: el host es `postgres` (nombre del servicio en `compose.yml`), NO `localhost`. pgAdmin se conecta a Postgres por la red interna de Docker.
-
-### 6.4 Variables de entorno
-
-El `.env` del proyecto ya tiene `DB_URL`, `DB_USERNAME` y `DB_PASSWORD`. No necesitas modificarlo.
-
-[↑ Volver al indice](#indice)
-
----
-
-## 7. Ejecutar el proyecto
+### 6.2 Ejecutar el proyecto
 
 **macOS / Linux (bash o zsh)**
 
@@ -231,17 +196,47 @@ mvn spring-boot:run
 
 > Como `application-local.yml` ya define valores por defecto que coinciden con el `docker compose` local, si no quieres lidiar con `.env` puedes correr directamente `mvn spring-boot:run` y funciona igual.
 
-Al arrancar, Hibernate crea las tablas `service_providers` y `bill_payments` en la base de datos `pagoya_db` (schema `public`).
+Al arrancar, Hibernate crea las tablas `service_providers` y `bill_payments` en la base de datos `pagoya_db` (schema `public`). Las podras inspeccionar desde pgAdmin una vez registrado el server (paso 6.4).
 
-Para verlas en pgAdmin sigue esta ruta:
+### 6.3 Datos de los servicios
+
+| Servicio | URL host | Usuario | Password |
+|---|---|---|---|
+| PostgreSQL | `localhost:55432` (BD `pagoya_db`) | `postgres` | `postgres` |
+| pgAdmin | `http://localhost:8082` | `admin@pagoya.com` | `admin` |
+
+### 6.4 Crear el server en pgAdmin
+
+1. Abre `http://localhost:8082` y entra con `admin@pagoya.com / admin`.
+2. Click derecho en **Servers → Register → Server...**
+3. **General → Name**: `pagoya-local`.
+4. **Connection**, completa con estos datos:
+
+   | Campo | Valor |
+   |---|---|
+   | Host name/address | `postgres` |
+   | Port | `5432` |
+   | Maintenance database | `pagoya_db` |
+   | Username | `postgres` |
+   | Password | `postgres` |
+
+5. Click **Save**.
+
+Importante: el host es `postgres` (nombre del servicio en `compose.yml`), NO `localhost`. pgAdmin se conecta a Postgres por la red interna de Docker.
+
+Para ver las tablas que creo Hibernate sigue esta ruta:
 
 ```
 Servers → pagoya-local → Databases → pagoya_db → Schemas → public → Tables
 ```
 
-Ahí debes ver listadas `service_providers` y `bill_payments` junto al resto de tablas del proyecto. Click derecho sobre cualquiera → **View/Edit Data → All Rows** para inspeccionar su contenido.
+Click derecho sobre `service_providers` o `bill_payments` → **View/Edit Data → All Rows** para inspeccionar su contenido.
 
-### 7.1 Cargar datos de prueba
+### 6.5 Variables de entorno
+
+El `.env` del proyecto ya tiene `DB_URL`, `DB_USERNAME` y `DB_PASSWORD`. No necesitas modificarlo.
+
+### 6.6 Cargar datos de prueba
 
 El proyecto trae los proveedores semilla en:
 
@@ -268,7 +263,7 @@ Inserta los proveedores `Sedapal`, `Luz del Sur`, `Movistar`, `Claro` y `Win`. E
 
 ---
 
-## 8. Crear la rama
+## 7. Crear la rama
 
 ```bash
 git checkout develop
@@ -280,9 +275,9 @@ git checkout -b feature/billing-context
 
 ---
 
-## 9. Estructura del paquete
+## 8. Estructura del paquete
 
-### 9.1 Crear el paquete `billing`
+### 8.1 Crear el paquete `billing`
 
 Dentro del proyecto, el paquete principal es `com.hampcode.pagoya`. Ahí ya existen otros bounded contexts (`auth`, `customer`, `transfer`, `shared`). Vas a crear uno nuevo al mismo nivel: `billing`.
 
@@ -297,7 +292,7 @@ Dentro del proyecto, el paquete principal es `com.hampcode.pagoya`. Ahí ya exis
 
 1. Click derecho sobre `src/main/java/com/hampcode/pagoya` → **New Folder** → `billing`.
 
-### 9.2 Crear los subpaquetes
+### 8.2 Crear los subpaquetes
 
 Dentro de `billing` crea los siete subpaquetes que agrupan el código por responsabilidad. Repite el paso anterior (click derecho → **New → Package** o **New Folder**) para cada uno:
 
@@ -313,7 +308,7 @@ Dentro de `billing` crea los siete subpaquetes que agrupan el código por respon
 
 > En IntelliJ, si escribes `billing.controller` directo en **New → Package**, te crea ambos niveles de un tirón.
 
-### 9.3 Estructura final
+### 8.3 Estructura final
 
 Cuando termines, el árbol del paquete debe verse así:
 
@@ -350,9 +345,9 @@ Por ahora los subpaquetes están vacíos; en las siguientes secciones vas creand
 
 ---
 
-## 10. Implementar `ServiceProvider` (catalogo)
+## 9. Implementar `ServiceProvider` (catalogo)
 
-### 10.1 `model/ProviderCategory.java`
+### 9.1 `model/ProviderCategory.java`
 
 Enum con las categorias del catalogo. Cada proveedor pertenece a una.
 
@@ -364,7 +359,7 @@ public enum ProviderCategory {
 }
 ```
 
-### 10.2 `model/ServiceProvider.java`
+### 9.2 `model/ServiceProvider.java`
 
 La entidad. Representa un proveedor que aparece en el catalogo. Es compartido — todos los clientes ven el mismo catalogo.
 
@@ -398,7 +393,7 @@ public class ServiceProvider {
 }
 ```
 
-### 10.3 `repository/ServiceProviderRepository.java`
+### 9.3 `repository/ServiceProviderRepository.java`
 
 **Buenas practicas**: la consulta se deriva del nombre del metodo (`findByActiveTrue`), no escribimos SQL. Filtra solo activos (RN-B01) y soporta paginacion via `Pageable`.
 
@@ -415,7 +410,7 @@ public interface ServiceProviderRepository extends JpaRepository<ServiceProvider
 }
 ```
 
-### 10.4 `dto/ServiceProviderResponse.java`
+### 9.4 `dto/ServiceProviderResponse.java`
 
 DTO de salida. Solo expone `id`, `name` y `category`. NO incluye `active` ni `createdAt` porque son metadatos internos.
 
@@ -429,7 +424,7 @@ public record ServiceProviderResponse(
 ) {}
 ```
 
-### 10.5 `mapper/ServiceProviderMapper.java`
+### 9.5 `mapper/ServiceProviderMapper.java`
 
 Convierte `ServiceProvider` → `ServiceProviderResponse`.
 
@@ -450,11 +445,11 @@ public interface ServiceProviderMapper {
 
 Por que ese `@Mapping`: el DTO tiene `category` como `String` pero la entity lo tiene como enum `ProviderCategory`. MapStruct no convierte enum → String solo, asi que con `expression = "java(...)"` le decimos como hacerlo (`p.getCategory().name()`).
 
-### 10.6 Excepciones
+### 9.6 Excepciones
 
 En esta etapa `ServiceProvider` solo expone una operacion de lectura, asi que NO necesita excepciones propias. Si mas adelante agregas POST o PUT podrias necesitar una `DuplicateProviderException` u otra de negocio.
 
-### 10.7 `service/IServiceProviderService.java`
+### 9.7 `service/IServiceProviderService.java`
 
 ```java
 package com.hampcode.pagoya.billing.service;
@@ -468,7 +463,7 @@ public interface IServiceProviderService {
 }
 ```
 
-### 10.8 `service/ServiceProviderService.java`
+### 9.8 `service/ServiceProviderService.java`
 
 **Logica de negocio**: devolver unicamente los proveedores activos del catalogo (RN-B01).
 
@@ -502,7 +497,7 @@ public class ServiceProviderService implements IServiceProviderService {
 }
 ```
 
-### 10.9 `controller/ServiceProviderController.java`
+### 9.9 `controller/ServiceProviderController.java`
 
 **Buenas practicas**: el controller no tiene logica de negocio, solo orquesta. Recibe `Pageable` desde la URL, devuelve `PageResponse` (estructura comun de paginacion del proyecto) y se documenta con `@Tag` + `@Operation` para Swagger.
 
@@ -542,9 +537,9 @@ public class ServiceProviderController {
 
 ---
 
-## 11. Implementar `BillPayment` (transaccional)
+## 10. Implementar `BillPayment` (transaccional)
 
-### 11.1 `model/PaymentStatus.java`
+### 10.1 `model/PaymentStatus.java`
 
 Enum con los estados que puede tener un pago.
 
@@ -556,7 +551,7 @@ public enum PaymentStatus {
 }
 ```
 
-### 11.2 `model/BillPayment.java`
+### 10.2 `model/BillPayment.java`
 
 La entidad transaccional. Tiene FKs a `Customer` y a `ServiceProvider`. La restriccion `unique(customer_id, provider_id, bill_code)` apoya RN-B03 a nivel de tabla.
 
@@ -605,7 +600,7 @@ public class BillPayment {
 }
 ```
 
-### 11.3 `repository/BillPaymentRepository.java`
+### 10.3 `repository/BillPaymentRepository.java`
 
 **Buenas practicas**: ambas consultas se derivan del nombre del metodo. `existsBy...` apoya la validacion de pagos duplicados (RN-B03) y `findByCustomer_Id` devuelve el historial paginado del cliente.
 
@@ -624,7 +619,7 @@ public interface BillPaymentRepository extends JpaRepository<BillPayment, Long> 
 }
 ```
 
-### 11.4 `dto/CreateBillPaymentRequest.java`
+### 10.4 `dto/CreateBillPaymentRequest.java`
 
 DTO de entrada con validaciones declarativas (Bean Validation). Cumple RN-B02 con `@DecimalMin/Max`.
 
@@ -646,7 +641,7 @@ public record CreateBillPaymentRequest(
 ) {}
 ```
 
-### 11.5 `dto/BillPaymentResponse.java`
+### 10.5 `dto/BillPaymentResponse.java`
 
 DTO de salida. Solo expone el nombre del proveedor (no su id), no expone `customerId` ni FK alguna.
 
@@ -666,7 +661,7 @@ public record BillPaymentResponse(
 ) {}
 ```
 
-### 11.6 `mapper/BillPaymentMapper.java`
+### 10.6 `mapper/BillPaymentMapper.java`
 
 Convierte DTO ↔ Entity en ambos sentidos.
 
@@ -700,7 +695,7 @@ Por que esos `@Mapping`:
 - En `toEntity`: los seis `ignore = true` indican que MapStruct NO debe copiar esos campos del DTO. El service los completa: `id` lo asigna la BD; `customer` y `provider` los carga el service desde sus repos; `status`, `paidAt` y `createdAt` los pone el sistema.
 - En `toResponse`: `source = "provider.name"` navega de la entity al campo `name` del proveedor. `expression` convierte el enum `status` a `String` (igual que en el ServiceProviderMapper).
 
-### 11.7 Excepciones
+### 10.7 Excepciones
 
 Dos excepciones de negocio: una para cuando el proveedor no esta activo (RN-B01) y otra para pagos duplicados (RN-B03). Heredan de `BusinessRuleException`, asi el `GlobalExceptionHandler` las atrapa con HTTP 400.
 
@@ -732,7 +727,7 @@ public class DuplicateBillPaymentException extends BusinessRuleException {
 }
 ```
 
-### 11.8 `service/IBillPaymentService.java`
+### 10.8 `service/IBillPaymentService.java`
 
 Interface del servicio.
 
@@ -750,7 +745,7 @@ public interface IBillPaymentService {
 }
 ```
 
-### 11.9 `service/BillPaymentService.java`
+### 10.9 `service/BillPaymentService.java`
 
 **Logica de negocio**:
 
@@ -834,7 +829,7 @@ public class BillPaymentService implements IBillPaymentService {
 }
 ```
 
-### 11.10 `controller/BillPaymentController.java`
+### 10.10 `controller/BillPaymentController.java`
 
 **Buenas practicas**: el controller no tiene logica de negocio, solo orquesta. `@Valid` activa Bean Validation sobre el body de entrada (RN-B02), `@ApiResponses` documenta los codigos HTTP esperados y el POST devuelve `201 Created` (no `200 OK`).
 
@@ -897,11 +892,11 @@ public class BillPaymentController {
 
 ---
 
-## 12. Implementar el reporte por categoria (US-B04)
+## 11. Implementar el reporte por categoria (US-B04)
 
 Vas a agregar un endpoint que cruza las dos tablas via stored procedure de PostgreSQL.
 
-### 12.1 Cargar el stored procedure
+### 11.1 Cargar el stored procedure
 
 Todos los stored procedures del proyecto estan en:
 
@@ -941,7 +936,7 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-### 12.2 `dto/PaymentByCategoryResponse.java`
+### 11.2 `dto/PaymentByCategoryResponse.java`
 
 DTO de salida del reporte. Una fila por categoria con su total.
 
@@ -957,7 +952,7 @@ public record PaymentByCategoryResponse(
 ) {}
 ```
 
-### 12.3 Sumar al `BillPaymentRepository`
+### 11.3 Sumar al `BillPaymentRepository`
 
 Agrega al repositorio una query nativa que invoca al stored procedure.
 
@@ -970,7 +965,7 @@ import java.util.List;
 List<Object[]> getPaymentsByCategory(@Param("customerId") Long customerId);
 ```
 
-### 12.4 Sumar al `IBillPaymentService` y a su implementacion
+### 11.4 Sumar al `IBillPaymentService` y a su implementacion
 
 Se agrega un metodo que valida que el cliente exista, ejecuta el stored procedure y mapea cada fila (`Object[]`) al DTO.
 
@@ -998,7 +993,7 @@ public List<PaymentByCategoryResponse> reportByCategory(Long customerId) {
 }
 ```
 
-### 12.5 Sumar al `BillPaymentController`
+### 11.5 Sumar al `BillPaymentController`
 
 Endpoint nuevo que sirve el reporte.
 
@@ -1015,9 +1010,9 @@ public ResponseEntity<List<PaymentByCategoryResponse>> reportByCategory(
 
 ---
 
-## 13. Configurar Swagger / OpenAPI
+## 12. Configurar Swagger / OpenAPI
 
-### 13.1 Verificar dependencias del proyecto
+### 12.1 Verificar dependencias del proyecto
 
 El proyecto ya trae las dependencias clave en `pom.xml`. Solo necesitas agregar la de Swagger.
 
@@ -1027,7 +1022,7 @@ El proyecto ya trae las dependencias clave en `pom.xml`. Solo necesitas agregar 
 | `mapstruct` + `mapstruct-processor` | Genera la implementacion del mapper en compile-time. | Ya en pom.xml |
 | `springdoc-openapi-starter-webmvc-ui` | Activa Swagger UI / OpenAPI en la API. | **Hay que agregarla** |
 
-### 13.2 Agregar la dependencia de Swagger al `pom.xml`
+### 12.2 Agregar la dependencia de Swagger al `pom.xml`
 
 ```xml
 <dependency>
@@ -1039,7 +1034,7 @@ El proyecto ya trae las dependencias clave en `pom.xml`. Solo necesitas agregar 
 
 Despues de pegarla **guarda el archivo (`Cmd/Ctrl + S`)**. En IntelliJ aparecera un boton flotante **"Load Maven Changes"** (o el icono de Maven en la esquina inferior derecha). Click ahi para que descargue la nueva dependencia. En VSCode con la extension de Java: click derecho sobre `pom.xml` → **Reload Project**.
 
-### 13.3 Crear `shared/config/OpenApiConfig.java`
+### 12.3 Crear `shared/config/OpenApiConfig.java`
 
 ```java
 package com.hampcode.pagoya.shared.config;
@@ -1060,7 +1055,7 @@ public class OpenApiConfig {
 }
 ```
 
-### 13.4 URLs tras arrancar
+### 12.4 URLs tras arrancar
 
 | URL | Para que |
 |---|---|
@@ -1071,9 +1066,9 @@ public class OpenApiConfig {
 
 ---
 
-## 14. Probar la API en Postman
+## 13. Probar la API en Postman
 
-En la seccion 0 ya importaste la coleccion `PagoYa API`. Ahora vas a agregarle el folder y los requests de `billing`.
+En la seccion 5 (Setup inicial) ya importaste la coleccion `PagoYa API`. Ahora vas a agregarle el folder y los requests de `billing`.
 
 1. En Postman, abre la coleccion `PagoYa API`.
 2. Click derecho sobre la coleccion → **Add folder** → nombre: `Billing`.
@@ -1092,9 +1087,9 @@ En la seccion 0 ya importaste la coleccion `PagoYa API`. Ahora vas a agregarle e
 
 ---
 
-## 15. Commit y Pull Request
+## 14. Commit y Pull Request
 
-### 15.1 Commit y push
+### 14.1 Commit y push
 
 ```bash
 git add src/main/java/com/hampcode/pagoya/billing \
@@ -1104,7 +1099,7 @@ git commit -m "feat(billing): pago de servicios con catalogo y reporte por categ
 git push -u origin feature/billing-context
 ```
 
-### 15.2 Abrir el PR en GitHub
+### 14.2 Abrir el PR en GitHub
 
 Crea el Pull Request: `feature/billing-context` → `develop`.
 
@@ -1153,7 +1148,7 @@ Bounded context `billing/` con dos agregados:
 
 ---
 
-## 16. Comandos de Git: cuando usar cada uno
+## 15. Comandos de Git: cuando usar cada uno
 
 Resumen practico — solo recomendaciones de cuando elegir cada comando.
 
@@ -1169,7 +1164,7 @@ Resumen practico — solo recomendaciones de cuando elegir cada comando.
 | `git log` | Para revisar el historial de commits: quien hizo que, cuando y en que rama. |
 | `git stash` | Cuando necesitas cambiar de rama urgente y no quieres perder lo que estas haciendo (sin commitear). |
 
-### 16.1 Diferencia clave entre `fetch` y `pull`
+### 15.1 Diferencia clave entre `fetch` y `pull`
 
 `fetch` solo TRAE informacion del remoto a tu copia local de las ramas remotas. NO toca tu rama de trabajo.
 
@@ -1177,7 +1172,7 @@ Resumen practico — solo recomendaciones de cuando elegir cada comando.
 
 Usa `fetch` cuando quieras inspeccionar antes de mezclar; usa `pull` cuando solo necesites estar al dia.
 
-### 16.2 Resolver conflictos de merge
+### 15.2 Resolver conflictos de merge
 
 Pasa cuando dos personas tocan la misma linea. `git merge` o `git pull` no puede decidir y deja el archivo en conflicto. Sigue estos pasos:
 
@@ -1190,7 +1185,7 @@ Pasa cuando dos personas tocan la misma linea. `git merge` o `git pull` no puede
 | 5 | `git push` | Sube los cambios al remoto. |
 | — | `git merge --abort` | Si te enredas, aborta el merge y vuelve al estado anterior. |
 
-### 16.3 Pasar un feature a `main` (release)
+### 15.3 Pasar un feature a `main` (release)
 
 Cuando el feature ya fue mergeado a `develop` y esta listo para produccion, un integrante crea una rama `release/*` y abre el PR a `main`.
 
@@ -1206,7 +1201,7 @@ Cuando el feature ya fue mergeado a `develop` y esta listo para produccion, un i
 | 8 | `git tag -a v1.X.0 -m "Release v1.X.0"` | Crear el tag de la version. |
 | 9 | `git push origin v1.X.0` | Subir el tag al remoto. |
 
-### 16.4 Arreglar una falla en `main` (hotfix)
+### 15.4 Arreglar una falla en `main` (hotfix)
 
 Cuando la version en `main` tiene un bug que NO puede esperar al proximo release, se crea una rama `hotfix/*` desde main, se corrige y se merge de vuelta a `main` y a `develop`.
 
@@ -1231,7 +1226,7 @@ Resumen de las dos diferencias importantes:
 | Feature normal | `develop` | `develop` (luego release a `main`) |
 | Hotfix | `main` | `main` Y tambien `develop` |
 
-### 16.5 `git rebase`: mantener tu feature al dia con historial limpio
+### 15.5 `git rebase`: mantener tu feature al dia con historial limpio
 
 Alternativa a `git merge` cuando quieres traer cambios de `develop` a tu feature SIN crear un commit de merge. `rebase` toma tus commits y los reaplica encima de la version actual de `develop`. El historial queda lineal y mas facil de leer.
 
@@ -1240,7 +1235,7 @@ Alternativa a `git merge` cuando quieres traer cambios de `develop` a tu feature
 | 1 | `git fetch origin` | Trae los cambios del remoto sin aplicar. |
 | 2 | `git checkout feature/billing-context` | Posicionarse en tu feature. |
 | 3 | `git rebase origin/develop` | Reaplica tus commits encima de la ultima version de develop. |
-| 4 | (resolver conflictos) | Si aparecen, los resuelves como en 16.2 y luego `git rebase --continue`. |
+| 4 | (resolver conflictos) | Si aparecen, los resuelves como en 15.2 y luego `git rebase --continue`. |
 | 5 | `git rebase --abort` | Si te enredas, aborta y vuelves al estado anterior. |
 | 6 | `git push --force-with-lease` | Si ya habias pusheado: rebase reescribe tus commits, `--force-with-lease` evita pisar trabajo de otros. |
 
@@ -1254,7 +1249,7 @@ Alternativa a `git merge` cuando quieres traer cambios de `develop` a tu feature
 
 Regla simple: rebase es seguro mientras la rama es **tuya y solo tuya**.
 
-### 16.6 Que hacer si un PR fue enviado de `feature/*` directo a `main`
+### 15.6 Que hacer si un PR fue enviado de `feature/*` directo a `main`
 
 Pasa cuando un integrante se equivoca de rama base y abre el Pull Request contra `main` en lugar de `develop`. Tienes dos casos: que aun NO se haya mergeado, o que ya se haya mergeado por error.
 
@@ -1274,12 +1269,12 @@ El feature quedo en `main` pero NO en `develop`. Hay que sincronizar para que el
 | 1 | `git checkout develop` | Posicionarse en develop. |
 | 2 | `git pull origin develop` | Asegurar que esta al dia. |
 | 3 | `git merge main` | Traer los commits que se mergearon en main. |
-| 4 | (resolver conflictos si aparecen) | Igual que en 16.2. |
+| 4 | (resolver conflictos si aparecen) | Igual que en 15.2. |
 | 5 | `git push origin develop` | Subir develop sincronizado. |
 
-Para evitar que vuelva a pasar, configura en GitHub una **branch protection rule** sobre `main` que prohiba merges directos desde ramas que no sean `release/*` o `hotfix/*` (ver 16.8).
+Para evitar que vuelva a pasar, configura en GitHub una **branch protection rule** sobre `main` que prohiba merges directos desde ramas que no sean `release/*` o `hotfix/*` (ver 15.8).
 
-### 16.7 Roles tipicos en el equipo
+### 15.7 Roles tipicos en el equipo
 
 GitFlow funciona mejor cuando los roles estan claros. Cualquier integrante puede tomar mas de uno segun el tamano del equipo.
 
@@ -1291,7 +1286,7 @@ GitFlow funciona mejor cuando los roles estan claros. Cualquier integrante puede
 | **Release Manager** | Crea ramas `release/*`, mergea a `main`, taggea las versiones. | Maintain o Admin |
 | **Admin** | Configura branch protection, secrets, integraciones (CI, Sonar, etc.). | Admin |
 
-### 16.8 Automatizar el rechazo de PRs no permitidos a `main`
+### 15.8 Automatizar el rechazo de PRs no permitidos a `main`
 
 Dos formas de bloquear automaticamente que alguien envie un PR de `feature/*` directo a `main`.
 
@@ -1333,7 +1328,7 @@ jobs:
 
 Si alguien abre un PR de `feature/...` → `main`, este workflow falla y el PR queda bloqueado hasta que cambien la rama base a `develop`.
 
-### 16.9 Automatizar el code review
+### 15.9 Automatizar el code review
 
 Herramientas que reducen el trabajo manual de revisar PRs.
 
@@ -1356,7 +1351,7 @@ Lo minimo recomendable para arrancar:
 
 ---
 
-## 17. Tarea propuesta
+## 16. Tarea propuesta
 
 Agregar al MISMO dominio `billing/` una tercera entidad: **`RecurringBillPayment`** (pago recurrente programado).
 
