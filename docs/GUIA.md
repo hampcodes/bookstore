@@ -2,7 +2,7 @@
 
 **Elaborado por:** Henry Antonio Mendoza Puerta
 
-Esta actividad ha sido preparada como parte de tu capacitacion. Usala como guia para desarrollar tu proyecto y como material de estudio para tus examenes.
+Esta actividad es parte de tu capacitación. Úsala como guía para tu proyecto y como material de estudio. Además, revisa previamente los materiales Laboratorio_04_Diseno_de_Software_Implementacion_API (Semana 4) y Laboratorio_05_Aplicando_Buenas_Practicas_API (Semana 5), donde se desarrolla desde cero el proyecto PagoYa API, que te servirá como referencia.
 
 ## Indice
 
@@ -29,7 +29,7 @@ Esta actividad ha sido preparada como parte de tu capacitacion. Usala como guia 
 
 ## 0. Setup inicial
 
-Antes de leer el contexto y comenzar a programar, es importante que prepares tu entorno de desarrollo y configures tu repositorio. Además, se recomienda revisar previamente los materiales Laboratorio_04_Diseno_de_Software_Implementacion_API (Semana 4) y Laboratorio_05_Aplicando_Buenas_Practicas_API (Semana 5), donde se implementa desde cero el proyecto PagoYa API, el cual te servirá como referencia para esta guía.
+Antes de leer el contexto y comenzar a programar, es importante que prepares tu entorno de desarrollo y configures tu repositorio. 
 
 ### 0.1 Descargar el proyecto
 
