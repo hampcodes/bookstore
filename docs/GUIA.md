@@ -2,7 +2,7 @@
 
 **Elaborado por:** Henry Antonio Mendoza Puerta
 
-Esta actividad es parte de tu capacitación. Úsala como guía para tu proyecto y como material de estudio. Además, revisa previamente los materiales Laboratorio_04_Diseno_de_Software_Implementacion_API (Semana 4) y Laboratorio_05_Aplicando_Buenas_Practicas_API (Semana 5), donde se desarrolla desde cero el proyecto PagoYa API, que te servirá como referencia.
+Esta actividad es parte de tu capacitación. Úsala como guía para tu proyecto y como material de estudio. Revisa previamente los materiales Laboratorio_04_Diseno_de_Software_Implementacion_API (Semana 4) y Laboratorio_05_Aplicando_Buenas_Practicas_API (Semana 5), donde se desarrolla desde cero el proyecto PagoYa API, que te servirá como referencia.
 
 ## Indice
 
