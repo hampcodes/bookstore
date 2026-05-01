@@ -21,8 +21,8 @@ Lo que vas a practicar:
 Antes de empezar, revisa de manera obligatoria los siguientes materiales donde se construye PagoYa API desde cero:
 
 - `Laboratorio_04_Diseno_de_Software_Implementacion_API` (Semana 4)
-- [`Laboratorio_05_Buenas_Practicas_API`](https://github.com/hampcodes/bookstore/blob/main/docs/Laboratorio_05_Buenas_Practicas_API.md) (Semana 5)
-- [`Teoria 5 — Buenas prácticas de diseño de API REST`](https://github.com/hampcodes/bookstore/blob/main/docs/Teoria05-Buenas%20practicas%20api%20rest.md) (Semana 5)
+- <a href="https://github.com/hampcodes/bookstore/blob/main/docs/Teoria05-Buenas%20practicas%20api%20rest.md" target="_blank" rel="noopener noreferrer"><code>Teoria 5 — Buenas prácticas de diseño de API REST</code></a> (Semana 5)
+- <a href="https://github.com/hampcodes/bookstore/blob/main/docs/Laboratorio_05_Buenas_Practicas_API.md" target="_blank" rel="noopener noreferrer"><code>Laboratorio_05_Buenas_Practicas_API</code></a> (Semana 5)
 
 ## Indice
 
