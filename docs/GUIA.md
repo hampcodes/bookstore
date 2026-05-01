@@ -377,7 +377,7 @@ public class ServiceProvider {
 
 ### 10.3 `repository/ServiceProviderRepository.java`
 
-El repositorio. `findByActiveTrue` filtra solo proveedores activos (RN-B01).
+**Buenas practicas**: la consulta se deriva del nombre del metodo (`findByActiveTrue`), no escribimos SQL. Filtra solo activos (RN-B01) y soporta paginacion via `Pageable`.
 
 ```java
 package com.hampcode.pagoya.billing.repository;
@@ -447,7 +447,9 @@ public interface IServiceProviderService {
 
 ### 10.8 `service/ServiceProviderService.java`
 
-Implementacion. Cada metodo declara su propio `@Transactional` (no a nivel de clase).
+**Logica de negocio**: devolver unicamente los proveedores activos del catalogo (RN-B01).
+
+**Buenas practicas**: `@Transactional(readOnly = true)` por metodo (no a nivel de clase) porque es solo lectura; el mapper se inyecta para no exponer la entidad fuera del service.
 
 ```java
 package com.hampcode.pagoya.billing.service;
@@ -479,7 +481,7 @@ public class ServiceProviderService implements IServiceProviderService {
 
 ### 10.9 `controller/ServiceProviderController.java`
 
-Expone el listado paginado en `GET /api/service-providers`. Anotaciones de Swagger lo documentan.
+**Buenas practicas**: el controller no tiene logica, solo orquesta. Recibe `Pageable` desde la URL, devuelve `PageResponse` (estructura comun de paginacion del proyecto) y se documenta con `@Tag` + `@Operation` para Swagger.
 
 ```java
 package com.hampcode.pagoya.billing.controller;
@@ -582,7 +584,7 @@ public class BillPayment {
 
 ### 11.3 `repository/BillPaymentRepository.java`
 
-`existsBy...` valida pagos duplicados (RN-B03). `findByCustomer_Id` es la lista paginada del historial.
+**Buenas practicas**: ambas consultas se derivan del nombre del metodo. `existsBy...` apoya la validacion de pagos duplicados (RN-B03) y `findByCustomer_Id` devuelve el historial paginado del cliente.
 
 ```java
 package com.hampcode.pagoya.billing.repository;
@@ -727,7 +729,14 @@ public interface IBillPaymentService {
 
 ### 11.9 `service/BillPaymentService.java`
 
-Implementacion. Es el corazon de la logica: valida cliente, valida proveedor activo, valida no-duplicado, y registra el pago.
+**Logica de negocio**:
+
+1. El cliente debe existir (RN-B06).
+2. El proveedor debe estar activo (RN-B01).
+3. No puede existir otro pago con el mismo `billCode` para ese cliente y proveedor (RN-B03).
+4. Si pasa todo, se guarda con estado `PAID` y `paidAt = now()` (RN-B04, RN-B05).
+
+**Buenas practicas**: `pay()` es `@Transactional` (escritura), `findByCustomer()` es `@Transactional(readOnly = true)`; los errores se levantan como excepciones de dominio (`InactiveProviderException`, `DuplicateBillPaymentException`, `ResourceNotFoundException`) que el `GlobalExceptionHandler` traduce a HTTP.
 
 ```java
 package com.hampcode.pagoya.billing.service;
@@ -804,7 +813,7 @@ public class BillPaymentService implements IBillPaymentService {
 
 ### 11.10 `controller/BillPaymentController.java`
 
-Expone los dos endpoints: POST para crear y GET paginado para listar el historial.
+**Buenas practicas**: el controller no tiene logica, solo orquesta. `@Valid` activa Bean Validation sobre el body de entrada (RN-B02), `@ApiResponses` documenta los codigos HTTP esperados y el POST devuelve `201 Created` (no `200 OK`).
 
 ```java
 package com.hampcode.pagoya.billing.controller;
