@@ -240,7 +240,7 @@ src/main/java/com/hampcode/pagoya/auth/
 │   ├── EmailAlreadyExistsException.java   (existente)
 │   └── InvalidRefreshTokenException.java  (NUEVO)
 ├── mapper/
-│   └── UserMapper.java              (existente)
+│   └── UserMapper.java              (modificado: agrega toRegisterResponse(User, Customer))
 ├── model/
 │   ├── User.java                    (existente)
 │   ├── Role.java                    (existente)
@@ -447,9 +447,37 @@ public record RegisterResponse(
 ) {}
 ```
 
-### 10.4 Modificar `UserService` para registro atómico
+### 10.4 Modificar `UserMapper` para combinar `User` + `Customer`
 
-Inyecta `PasswordEncoder` Y `CustomerRepository`. Ambas inserts viajan en la misma transacción:
+`UserMapper` cambia de mapear sólo `User → UserResponse` a mapear **dos entidades a la vez** (`User` + `Customer`) hacia el `RegisterResponse`. MapStruct soporta múltiples fuentes:
+
+```java
+package com.hampcode.pagoya.auth.mapper;
+
+import com.hampcode.pagoya.auth.dto.RegisterResponse;
+import com.hampcode.pagoya.auth.model.User;
+import com.hampcode.pagoya.customer.model.Customer;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+@Mapper(componentModel = "spring")
+public interface UserMapper {
+
+    @Mapping(target = "userId",     source = "user.id")
+    @Mapping(target = "email",      source = "user.email")
+    @Mapping(target = "role",       source = "user.role.name")
+    @Mapping(target = "customerId", source = "customer.id")
+    @Mapping(target = "fullName",   source = "customer.fullName")
+    @Mapping(target = "dni",        source = "customer.dni")
+    RegisterResponse toRegisterResponse(User user, Customer customer);
+}
+```
+
+**Por qué dos parámetros:** el `RegisterResponse` mezcla campos de los dos dominios (`auth` y `customer`). En lugar de armarlo a mano con `new RegisterResponse(...)`, le pasamos las dos entidades al mapper y MapStruct resuelve los `source` con notación `param.field`.
+
+### 10.5 Modificar `UserService` para registro atómico
+
+Inyecta `PasswordEncoder`, `CustomerRepository` y `UserMapper`. Ambas inserts viajan en la misma transacción:
 
 ```java
 package com.hampcode.pagoya.auth.service;
@@ -457,6 +485,7 @@ package com.hampcode.pagoya.auth.service;
 import com.hampcode.pagoya.auth.dto.RegisterResponse;
 import com.hampcode.pagoya.auth.dto.RegisterUserRequest;
 import com.hampcode.pagoya.auth.exception.EmailAlreadyExistsException;
+import com.hampcode.pagoya.auth.mapper.UserMapper;
 import com.hampcode.pagoya.auth.model.Role;
 import com.hampcode.pagoya.auth.model.User;
 import com.hampcode.pagoya.auth.repository.RoleRepository;
@@ -478,6 +507,7 @@ public class UserService implements IUserService {
     private final RoleRepository roleRepository;
     private final CustomerRepository customerRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
     @Override
     @Transactional   // atomico: si falla cualquiera de los 2 inserts, rollback total
@@ -512,16 +542,15 @@ public class UserService implements IUserService {
             .build();
         customer = customerRepository.save(customer);
 
-        return new RegisterResponse(
-            user.getId(), user.getEmail(), role.getName(),
-            customer.getId(), customer.getFullName(), customer.getDni());
+        // 3. Armar la respuesta delegando en el mapper
+        return userMapper.toRegisterResponse(user, customer);
     }
 }
 ```
 
 > 🔒 **Por qué `userId` ya no viene del body**: aunque el endpoint es público (`permitAll`), seguimos la regla **RN-S12**: nunca confiar en ids del body para autenticación/autorización. El servidor genera el `User`, obtiene su id y lo asigna internamente al `Customer`. Imposible falsificar.
 
-### 10.5 Actualizar `IUserService`
+### 10.6 Actualizar `IUserService`
 
 ```java
 package com.hampcode.pagoya.auth.service;
@@ -534,7 +563,7 @@ public interface IUserService {
 }
 ```
 
-### 10.6 Actualizar `AuthController` (endpoint register)
+### 10.7 Actualizar `AuthController` (endpoint register)
 
 Cambia el tipo de respuesta de `UserResponse` a `RegisterResponse`:
 
@@ -550,7 +579,7 @@ public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterUse
 }
 ```
 
-### 10.7 Limpiar `CustomerController`
+### 10.8 Limpiar `CustomerController`
 
 El método `create()` que recibía `userId` en el body **se elimina** (la creación pasa a ser interna del registro). Si más adelante necesitás un endpoint admin para alta manual, podés reintroducirlo bajo `@PreAuthorize("hasRole('ADMIN')")`.
 
