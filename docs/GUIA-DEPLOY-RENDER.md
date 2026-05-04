@@ -43,9 +43,10 @@ Si saltaste alguno, **no continúes**. Vuelve, complétalos y luego retoma esta 
 - [12. Configurar variables de entorno del Web Service](#12-configurar-variables-de-entorno-del-web-service)
 - [13. Primer deploy y revisión de logs](#13-primer-deploy-y-revisión-de-logs)
 - [14. Probar la API en producción](#14-probar-la-api-en-producción)
-- [15. Redeploys automáticos](#15-redeploys-automáticos)
-- [16. Troubleshooting común](#16-troubleshooting-común)
-- [17. Pull Request](#17-pull-request)
+- [15. Conectar pgAdmin a la BD de Render](#15-conectar-pgadmin-a-la-bd-de-render)
+- [16. Redeploys automáticos](#16-redeploys-automáticos)
+- [17. Troubleshooting común](#17-troubleshooting-común)
+- [18. Pull Request](#18-pull-request)
 
 ---
 
@@ -527,7 +528,132 @@ curl https://pagoya-api.onrender.com/api/customers/me \
 
 ---
 
-## 15. Redeploys automáticos
+## 15. Conectar pgAdmin a la BD de Render
+
+Para inspeccionar la data en producción (ver qué `users` se registraron, qué `refresh_tokens` están activos, qué `customers` existen) podés conectar tu pgAdmin **local** directo a la BD de Render. Útil para debuggear, verificar que JPA creó las tablas y correr `SELECT` manuales.
+
+> ⚠️ Recordá: lo que ves desde pgAdmin **es la BD de producción**. Hacer `DELETE` o `UPDATE` aquí afecta a los usuarios reales del sistema. Para inspeccionar está perfecto; para modificar, mejor desde la API.
+
+### 15.1 Conseguir los datos de conexión externa
+
+En el dashboard de Render, abre tu BD `pagoya-db` y baja a la sección **`Connections`**. **Esta vez vas a usar los datos `External`** (la `Internal URL` sólo funciona desde dentro de Render):
+
+| Campo en pgAdmin | De dónde sale en Render |
+|---|---|
+| **Host name/address** | `Hostname` (External) — termina con `.oregon-postgres.render.com` |
+| **Port** | `Port` — siempre `5432` |
+| **Maintenance database** | `Database` — `pagoya_db` |
+| **Username** | `Username` |
+| **Password** | `Password` |
+
+> 🔑 Si copiás la `External Database URL` completa, su formato es:
+>
+> ```
+> postgresql://<user>:<password>@<external-host>/<database>
+> ```
+>
+> Cada parte de la URL corresponde a un campo de pgAdmin. **No** pegues esa URL completa en un solo campo: pgAdmin pide los datos por separado.
+
+### 15.2 Registrar el servidor en pgAdmin
+
+Esto funciona igual con el **pgAdmin Desktop** (instalado en tu PC) o con el **pgAdmin del `compose.yml`** (en `http://localhost:8082` con `admin@pagoya.com` / `admin`).
+
+1. En el árbol de la izquierda (`Object Explorer`), click derecho en **`Servers`** → **`Register`** → **`Server...`**.
+
+2. Pestaña **`General`**:
+
+   | Campo | Valor |
+   |---|---|
+   | **Name** | `PagoYa Render` *(el label que vos quieras)* |
+
+3. Pestaña **`Connection`**:
+
+   | Campo | Valor |
+   |---|---|
+   | **Host name/address** | el `Hostname` (External) de Render |
+   | **Port** | `5432` |
+   | **Maintenance database** | `pagoya_db` |
+   | **Username** | el `Username` de Render |
+   | **Password** | el `Password` de Render |
+   | **Save password?** | ✅ (marca para no tener que reingresarlo) |
+
+4. Pestaña **`Parameters`** (en pgAdmin 4) — agregá un parámetro:
+
+   | Name | Value |
+   |---|---|
+   | **SSL mode** | `Require` |
+
+   > Render exige SSL para conexiones externas. Si dejás `Prefer` o `Disable`, la conexión falla con `FATAL: SSL connection is required`.
+
+5. Click **`Save`**. Si los datos están bien, pgAdmin se conecta y vas a ver el nuevo server en el árbol.
+
+### 15.3 Explorar las tablas
+
+En el árbol:
+
+```
+Servers
+└── PagoYa Render
+    └── Databases
+        └── pagoya_db
+            └── Schemas
+                └── public
+                    └── Tables
+                        ├── users
+                        ├── customers
+                        ├── roles
+                        ├── refresh_tokens
+                        ├── accounts
+                        ├── transfers
+                        └── ...
+```
+
+Si las tablas no aparecen, refrescá con click derecho → **`Refresh`**. Aparecen apenas la app arranca por primera vez (porque `ddl-auto: update` las crea al inicio).
+
+**Ver el contenido de una tabla:**
+
+Click derecho en la tabla → **`View/Edit Data`** → **`All Rows`**.
+
+**Correr una consulta SQL:**
+
+Menú **`Tools`** → **`Query Tool`**. Algunas consultas útiles:
+
+```sql
+-- Usuarios registrados (sin mostrar el hash de password)
+SELECT id, email, verified, role_id
+FROM users
+ORDER BY id DESC;
+
+-- Customers con su email del User
+SELECT c.id, c.full_name, c.dni, c.phone, u.email
+FROM customers c
+JOIN users u ON u.id = c.user_id
+ORDER BY c.id DESC;
+
+-- Refresh tokens activos (no revocados ni expirados)
+SELECT user_id, token, expires_at, revoked
+FROM refresh_tokens
+WHERE revoked = false
+  AND expires_at > NOW();
+
+-- Cuántas cuentas hay por estado
+SELECT status, COUNT(*) FROM accounts GROUP BY status;
+```
+
+### 15.4 Errores comunes al conectar
+
+| Síntoma | Causa | Solución |
+|---|---|---|
+| `could not translate host name` | Usaste el `Internal Hostname` (sólo funciona dentro de Render). | Copiá el **External Hostname** (con `.oregon-postgres.render.com`). |
+| `FATAL: SSL connection is required` | Falta el parámetro `SSL mode = Require`. | Agregalo en la pestaña `Parameters` del server. |
+| `password authentication failed` | Username o password mal copiados. | Revisá los datos en el panel de la BD en Render. |
+| `connection timed out` | Algún firewall corporativo o VPN bloquea el 5432. | Probá desde otra red (datos móviles, por ejemplo). |
+
+[↑ Volver al indice](#indice)
+
+---
+
+## 16. Redeploys automáticos
 
 Por defecto, Render escucha la branch que configuraste (`main`). Cada vez que mergees un PR a `main`, Render automáticamente lanza un nuevo build con el `Dockerfile` y reemplaza el contenedor en ejecución.
 
@@ -550,7 +676,7 @@ git push origin main         # ← este push dispara el deploy en Render
 
 ---
 
-## 16. Troubleshooting común
+## 17. Troubleshooting común
 
 | Síntoma | Causa probable | Solución |
 |---|---|---|
@@ -570,7 +696,7 @@ Dashboard del servicio → pestaña **`Logs`** → activa el toggle **`Tail`**. 
 
 ---
 
-## 17. Pull Request
+## 18. Pull Request
 
 Pull Request: `feature/deploy-render` → `develop`.
 
