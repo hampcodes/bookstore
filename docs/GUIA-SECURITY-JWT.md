@@ -1586,7 +1586,7 @@ public class SecurityChecks {
 }
 ```
 
-Luego en `BillPaymentController` (cuando exista, viene de `GUIA-AHORRO.md`):
+Luego en `BillPaymentController`:
 
 ```java
 @PreAuthorize("hasRole('ADMIN') or @securityChecks.isCustomerOwner(#customerId, authentication.principal)")
