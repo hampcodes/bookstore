@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spring Security + JWT — PagoYa</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css" id="theme">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+
+  <style>
+    :root {
+      --pagoya-green: #16a34a;
+      --pagoya-dark:  #064e3b;
+      --pagoya-soft:  #ecfdf5;
+      --pagoya-amber: #f59e0b;
+      --pagoya-ink:   #1f2937;
+    }
+
+    /* Tipografia base mas pequena para que entre todo */
+    .reveal { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 26px; color: var(--pagoya-ink); }
+    .reveal h1, .reveal h2, .reveal h3 { color: var(--pagoya-dark); font-weight: 700; letter-spacing: -0.5px; margin-top: 0; }
+    .reveal h1 { font-size: 1.9em; line-height: 1.1; }
+    .reveal h2 { font-size: 1.2em; margin-bottom: 0.4em; }
+    .reveal h3 { font-size: 0.95em; margin-bottom: 0.3em; }
+    .reveal p, .reveal li { font-size: 0.78em; line-height: 1.4; }
+    .reveal section { text-align: left; }
+    .reveal .title-slide { text-align: center; }
+
+    /* Codigo: chico y con scroll si hace falta */
+    .reveal pre {
+      box-shadow: 0 4px 12px rgba(0,0,0,.08);
+      border-radius: 8px;
+      width: 100%;
+      max-height: 360px;
+      overflow: auto;
+      margin: 0.3em 0;
+    }
+    .reveal pre code {
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 14px;
+      line-height: 1.35;
+      padding: 0.8em 1em;
+    }
+
+    /* Tablas compactas */
+    .reveal table { font-size: 0.7em; border-collapse: collapse; width: 100%; }
+    .reveal table th { background: var(--pagoya-soft); color: var(--pagoya-dark); padding: 0.3em 0.6em; text-align: left; }
+    .reveal table td { padding: 0.3em 0.6em; border-bottom: 1px solid #e5e7eb; }
+    .reveal ul li { margin-bottom: 0.2em; }
+
+    .reveal blockquote {
+      background: var(--pagoya-soft);
+      border-left: 4px solid var(--pagoya-green);
+      padding: 0.5em 0.9em; border-radius: 6px;
+      font-style: normal; font-size: 0.78em;
+      margin: 0.4em 0;
+    }
+
+    .badge {
+      display: inline-block; padding: 0.15em 0.6em; border-radius: 999px;
+      background: var(--pagoya-green); color: #fff; font-size: 0.55em;
+      vertical-align: middle; margin-left: 0.4em; font-weight: 600;
+    }
+    .badge.amber { background: var(--pagoya-amber); }
+    .badge.dark { background: var(--pagoya-dark); }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8em; }
+    .grid-code-explain { display: grid; grid-template-columns: 1.3fr 1fr; gap: 0.8em; align-items: start; }
+
+    .card {
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+      padding: 0.7em 0.9em; box-shadow: 0 2px 6px rgba(0,0,0,.04);
+    }
+    .card h3 { margin-top: 0; color: var(--pagoya-green); font-size: 0.9em; }
+    .card p, .card li { font-size: 0.72em; }
+
+    .footer-note { font-size: 0.55em; color: #6b7280; margin-top: 0.6em; }
+
+    .pill {
+      display: inline-block; padding: 0.05em 0.45em; border-radius: 4px;
+      background: #fef3c7; color: #92400e; font-family: monospace; font-size: 0.85em;
+    }
+    .pill.green { background: #d1fae5; color: #065f46; }
+    .pill.red   { background: #fee2e2; color: #991b1b; }
+    .pill.dark  { background: var(--pagoya-dark); color: #fff; }
+
+    .flow {
+      display: flex; align-items: center; justify-content: flex-start; gap: 0.4em;
+      flex-wrap: wrap; font-size: 0.72em; margin: 0.5em 0;
+    }
+    .flow .step {
+      background: var(--pagoya-soft); border: 2px solid var(--pagoya-green);
+      border-radius: 8px; padding: 0.25em 0.6em; color: var(--pagoya-dark); font-weight: 500;
+    }
+    .flow .arrow { color: var(--pagoya-green); font-weight: bold; font-size: 1.2em; }
+
+    .flow.vertical { flex-direction: column; align-items: flex-start; gap: 0.35em; }
+    .flow.vertical .row { display: flex; align-items: center; gap: 0.5em; }
+
+    /* Caja de explicacion al lado del codigo */
+    .explain {
+      background: #fafafa;
+      border-left: 3px solid var(--pagoya-amber);
+      border-radius: 6px;
+      padding: 0.6em 0.9em;
+      font-size: 0.72em;
+      line-height: 1.45;
+    }
+    .explain h4 { color: var(--pagoya-dark); font-size: 0.9em; margin: 0 0 0.3em 0; font-weight: 700; }
+    .explain ul { padding-left: 0; margin: 0.2em 0; list-style: none; }
+    .explain li {
+      margin-bottom: 0.3em;
+      font-size: 1em;
+      padding-left: 1.1em;
+      position: relative;
+      color: #4b5563;
+      transition: color 0.3s ease, opacity 0.3s ease;
+    }
+    .explain li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: #d1d5db;
+      font-weight: bold;
+      transition: color 0.3s ease, transform 0.3s ease;
+    }
+    /* Cuando hay un bullet activo en el panel, los demas se opacan */
+    .explain.has-active li {
+      opacity: 0.25;
+    }
+    .explain.has-active li.explain-active {
+      opacity: 1;
+    }
+    /* Marcador minimalista: bullet activo */
+    .explain li.explain-active {
+      color: var(--pagoya-dark);
+      font-weight: 600;
+    }
+    .explain li.explain-active::before {
+      color: var(--pagoya-amber);
+      transform: translateX(2px) scale(1.2);
+    }
+    .explain code { background: #fff; padding: 1px 5px; border-radius: 3px; font-size: 0.95em; }
+
+    .strategy-row {
+      display: grid;
+      grid-template-columns: 60px 1fr;
+      gap: 0.6em;
+      align-items: start;
+      margin-bottom: 0.5em;
+      padding: 0.5em;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    .strategy-row .num {
+      background: var(--pagoya-green);
+      color: #fff;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1em; font-weight: 700;
+      margin-top: 2px;
+    }
+    .strategy-row h4 { margin: 0 0 0.2em 0; color: var(--pagoya-dark); font-size: 0.9em; }
+    .strategy-row p { font-size: 0.72em; margin: 0; line-height: 1.4; }
+  </style>
+</head>
+<body>
+<div class="reveal"><div class="slides">
+
+<!-- ================== 1. PORTADA ================== -->
+<section class="title-slide">
+  <h1>Spring Security + JWT</h1>
+  <h3 style="color:#475569; font-weight:400">Autenticación y autorización moderna en APIs REST</h3>
+  <p style="margin-top:1.5em">
+    <span class="badge dark">Semana 06</span>
+    <span class="badge">PagoYa API</span>
+    <span class="badge amber">DDD</span>
+  </p>
+  <p class="footer-note">Henry Antonio Mendoza Puerta · 2026</p>
+</section>
+
+<!-- ================== 2. AGENDA ================== -->
+<section>
+  <h2>Agenda</h2>
+  <ol style="font-size:0.85em">
+    <li>¿Qué es Spring Security?</li>
+    <li>Autenticación vs autorización</li>
+    <li>Cadena de filtros (Filter Chain)</li>
+    <li>Sesiones cookies vs tokens stateless</li>
+    <li>JWT: anatomía del token</li>
+    <li>Flujo completo: login → token → request protegido</li>
+    <li>Componentes a implementar en PagoYa</li>
+    <li>Logout e invalidación con refresh tokens</li>
+    <li>Configuración de duración y uso desde frontend</li>
+    <li>Buenas prácticas y errores comunes</li>
+  </ol>
+</section>
+
+<!-- ================== 3. SPRING SECURITY ================== -->
+<section>
+  <h2>¿Qué es Spring Security?</h2>
+  <blockquote>
+    Framework de autenticación y control de acceso para aplicaciones Java. Es el <strong>estándar de facto</strong> para asegurar apps Spring.
+  </blockquote>
+  <ul>
+    <li><strong>Autenticación</strong> (¿quién eres?): login con usuario/contraseña, OAuth2, JWT, LDAP…</li>
+    <li><strong>Autorización</strong> (¿qué puedes hacer?): roles, permisos, expresiones en endpoints.</li>
+    <li>Protección contra <em>CSRF</em>, <em>session fixation</em>, <em>clickjacking</em>, <em>XSS</em>.</li>
+    <li>Integración limpia con Spring Boot vía <span class="pill">spring-boot-starter-security</span>.</li>
+  </ul>
+  <p class="footer-note">Fuente: <a href="https://spring.io/projects/spring-security">spring.io/projects/spring-security</a></p>
+</section>
+
+<!-- ================== 3b. AMENAZAS WEB COMUNES ================== -->
+<section>
+  <h2>Las 4 amenazas que Spring Security mitiga</h2>
+  <p style="font-size:0.75em">Antes de entrar en JWT, conocé contra qué nos protege el framework:</p>
+  <div class="grid-2" style="font-size:0.7em">
+    <div class="card">
+      <h3>🎯 CSRF (Cross-Site Request Forgery)</h3>
+      <p><strong>Qué es:</strong> el atacante hace que un usuario logueado ejecute una acción sin querer (ej: clic en un link malicioso que dispara <code>POST /transfer</code> a tu banco).</p>
+      <p><strong>Cómo:</strong> el navegador envía las cookies de sesión automáticamente con cada request, incluso desde otro sitio.</p>
+      <p><strong>Defensa:</strong> token CSRF único por sesión que el atacante no puede adivinar. <strong>En APIs JWT lo desactivamos</strong> (no usamos cookies, el token va en header).</p>
+    </div>
+    <div class="card">
+      <h3>🪪 Session Fixation</h3>
+      <p><strong>Qué es:</strong> el atacante "fija" un session ID en la víctima antes de que se loguee. Cuando ésta se autentica, el atacante ya tiene su sesión.</p>
+      <p><strong>Cómo:</strong> envía un link con un <code>JSESSIONID</code> conocido. La víctima entra y se loguea con esa sesión.</p>
+      <p><strong>Defensa:</strong> Spring Security <strong>regenera el session ID</strong> automáticamente al hacer login. Con JWT stateless ni siquiera aplica (no hay sesión).</p>
+    </div>
+    <div class="card">
+      <h3>🖼️ Clickjacking</h3>
+      <p><strong>Qué es:</strong> el atacante mete tu sitio en un <code>&lt;iframe&gt;</code> invisible sobre su página. El usuario cree que clickea botones de la web maliciosa pero clickea los tuyos.</p>
+      <p><strong>Ejemplo clásico:</strong> "Click para ganar un iPhone" → el clic real va al botón "Transferir 1000" de tu banco.</p>
+      <p><strong>Defensa:</strong> header <code>X-Frame-Options: DENY</code> que prohíbe ser embebido. Spring Security lo agrega por defecto.</p>
+    </div>
+    <div class="card">
+      <h3>💉 XSS (Cross-Site Scripting)</h3>
+      <p><strong>Qué es:</strong> el atacante inyecta JavaScript en tu página que se ejecuta en el navegador de otros usuarios.</p>
+      <p><strong>Cómo:</strong> guarda un comentario tipo <code>&lt;script&gt;fetch('/api/...', ...)&lt;/script&gt;</code> y cuando otro usuario lo ve, su navegador ejecuta el script con SUS credenciales.</p>
+      <p><strong>Defensa:</strong> escapar HTML en outputs, headers <code>Content-Security-Policy</code>, y guardar tokens en cookies <code>HttpOnly</code> (no accesibles desde JS).</p>
+    </div>
+  </div>
+  <blockquote style="margin-top:0.4em; font-size:0.7em">
+    ⚠️ <strong>JWT en localStorage es vulnerable a XSS</strong>: cualquier script inyectado puede leerlo. Por eso algunos prefieren cookies <code>HttpOnly</code>. En PagoYa usamos localStorage por simplicidad académica, pero en producción real evaluá el trade-off.
+  </blockquote>
+</section>
+
+<!-- ================== 4. AUTENTICACION VS AUTORIZACION ================== -->
+<section>
+  <h2>Autenticación vs Autorización</h2>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Autenticación</h3>
+      <p>Verificar la identidad del usuario.</p>
+      <ul>
+        <li>Email + contraseña</li>
+        <li>Token JWT</li>
+        <li>OAuth2, SSO</li>
+      </ul>
+      <p class="footer-note"><span class="pill green">¿Eres quien dices ser?</span></p>
+    </div>
+    <div class="card">
+      <h3>Autorización</h3>
+      <p>Decidir qué puede hacer ese usuario.</p>
+      <ul>
+        <li>Rol <code>CUSTOMER</code> vs <code>ADMIN</code></li>
+        <li><code>@PreAuthorize("hasRole('ADMIN')")</code></li>
+        <li>Reglas por endpoint o método</li>
+      </ul>
+      <p class="footer-note"><span class="pill green">¿Tienes permiso para esto?</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 5. FILTER CHAIN ================== -->
+<section>
+  <h2>Cadena de filtros de Spring Security</h2>
+  <p>Cada request HTTP atraviesa una <strong>secuencia de filtros</strong> antes de llegar al controller.</p>
+  <div class="flow">
+    <div class="step">Request</div><span class="arrow">→</span>
+    <div class="step">CSRF</div><span class="arrow">→</span>
+    <div class="step">Auth Filter</div><span class="arrow">→</span>
+    <div class="step">JWT Filter</div><span class="arrow">→</span>
+    <div class="step">Authorization</div><span class="arrow">→</span>
+    <div class="step">Controller</div>
+  </div>
+  <ul>
+    <li>Si un filtro <strong>rechaza</strong> el request, el controller <em>nunca</em> se ejecuta.</li>
+    <li>Para JWT escribimos <strong>nuestro propio filtro</strong> que extrae el token del header <span class="pill">Authorization: Bearer ...</span>.</li>
+    <li>Si el token es válido, el filtro coloca el usuario en el <span class="pill">SecurityContext</span>.</li>
+  </ul>
+</section>
+
+<!-- ================== 6. STATEFUL VS STATELESS ================== -->
+<section>
+  <h2>Sesiones: cookie vs token</h2>
+  <table>
+    <thead><tr><th>Aspecto</th><th>Cookie / Sesión</th><th>JWT (stateless)</th></tr></thead>
+    <tbody>
+      <tr><td>Estado en servidor</td><td>Sí (memoria/Redis)</td><td><strong>No</strong></td></tr>
+      <tr><td>Escalabilidad horizontal</td><td>Necesita session store</td><td>Cualquier nodo valida</td></tr>
+      <tr><td>Mobile / SPA</td><td>Difícil</td><td>Natural</td></tr>
+      <tr><td>Logout instantáneo</td><td>Fácil (invalida sesión)</td><td>Requiere blacklist</td></tr>
+      <tr><td>Tamaño por request</td><td>Bajo (sólo el ID)</td><td>Mayor (claims viajan)</td></tr>
+    </tbody>
+  </table>
+  <blockquote>Para una API REST consumida por mobile/web, <strong>JWT</strong> es el estándar.</blockquote>
+</section>
+
+<!-- ================== 7. ANATOMIA JWT ================== -->
+<section>
+  <h2>JWT — anatomía del token</h2>
+  <p>Tres partes en Base64URL separadas por puntos:</p>
+<pre><code class="language-text" data-trim>xxxxx.yyyyy.zzzzz
+header.payload.signature</code></pre>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Header</h3>
+<pre><code class="language-json" data-trim>{ "alg": "HS256", "typ": "JWT" }</code></pre>
+    </div>
+    <div class="card">
+      <h3>Payload (claims)</h3>
+<pre><code class="language-json" data-trim>{
+  "sub": "ana@pagoya.com",
+  "role": "CUSTOMER",
+  "iat": 1714867200,
+  "exp": 1714870800
+}</code></pre>
+    </div>
+  </div>
+  <p style="margin:0.4em 0; font-size:0.78em">La <strong>firma</strong> garantiza integridad: si alguien edita el payload, deja de ser válida.</p>
+</section>
+
+<!-- ================== 8. JWT - claims ================== -->
+<section>
+  <h2>JWT — claims importantes</h2>
+  <table>
+    <thead><tr><th>Claim</th><th>Significado</th><th>Uso típico</th></tr></thead>
+    <tbody>
+      <tr><td><code>sub</code></td><td>Subject (usuario)</td><td>Email o ID del usuario</td></tr>
+      <tr><td><code>iat</code></td><td>Issued at</td><td>Cuándo se emitió</td></tr>
+      <tr><td><code>exp</code></td><td>Expiration</td><td>Cuándo deja de ser válido</td></tr>
+      <tr><td><code>iss</code></td><td>Issuer</td><td>Quién lo emitió</td></tr>
+      <tr><td><code>aud</code></td><td>Audience</td><td>Para quién</td></tr>
+      <tr><td><code>jti</code></td><td>JWT ID</td><td>Identificador único (para blacklists)</td></tr>
+      <tr><td><code>role</code></td><td>Custom claim</td><td>Rol del usuario</td></tr>
+    </tbody>
+  </table>
+  <blockquote>El payload <strong>NO está cifrado</strong>, sólo firmado. Nunca pongas datos sensibles ahí.</blockquote>
+</section>
+
+<!-- ================== 9. FLUJO LOGIN ================== -->
+<section>
+  <h2>Flujo de login con JWT</h2>
+  <div class="flow vertical">
+    <div class="row"><span class="pill">1</span> Cliente envía <code>POST /api/auth/login</code> con email + password</div>
+    <div class="row"><span class="pill">2</span> Backend valida con <code>AuthenticationManager</code> + <code>UserDetailsService</code></div>
+    <div class="row"><span class="pill">3</span> Si OK, <code>JwtService</code> firma un token con <code>HS256</code> + secret</div>
+    <div class="row"><span class="pill">4</span> Backend responde <code>200 { token: "eyJhbGci..." }</code></div>
+    <div class="row"><span class="pill">5</span> Cliente guarda el token y lo envía en <code>Authorization: Bearer ...</code></div>
+  </div>
+</section>
+
+<!-- ================== 10. FLUJO REQUEST PROTEGIDO ================== -->
+<section>
+  <h2>Flujo de request protegido</h2>
+  <div class="flow vertical">
+    <div class="row"><span class="pill">1</span> Cliente: <code>GET /api/customers/me</code> + <code>Authorization: Bearer xxx.yyy.zzz</code></div>
+    <div class="row"><span class="pill">2</span> <strong>JwtAuthenticationFilter</strong> extrae el token</div>
+    <div class="row"><span class="pill">3</span> Valida firma y expiración con <code>JwtService.isValid()</code></div>
+    <div class="row"><span class="pill">4</span> Carga el <code>UserDetails</code> y crea el <code>Authentication</code></div>
+    <div class="row"><span class="pill">5</span> Lo coloca en <code>SecurityContextHolder</code></div>
+    <div class="row"><span class="pill">6</span> El controller ejecuta y puede leer el usuario autenticado</div>
+  </div>
+</section>
+
+<!-- ================== 11. COMPONENTES ================== -->
+<section>
+  <h2>Componentes a implementar en PagoYa</h2>
+  <table>
+    <thead><tr><th>Componente</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>SecurityConfig</code></td><td>Define <code>SecurityFilterChain</code>, endpoints públicos, CORS, stateless.</td></tr>
+      <tr><td><code>JwtService</code></td><td>Firma, valida y extrae claims de tokens JWT.</td></tr>
+      <tr><td><code>JwtAuthenticationFilter</code></td><td>Filtro que lee el header y autentica al usuario.</td></tr>
+      <tr><td><code>UserDetailsServiceImpl</code></td><td>Carga el <code>User</code> desde BD por email.</td></tr>
+      <tr><td><code>AuthService.login()</code></td><td>Valida credenciales y emite el JWT.</td></tr>
+      <tr><td><code>PasswordEncoder</code></td><td><code>BCryptPasswordEncoder</code> para hashear passwords.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ================== 12. SECURITY CONFIG ================== -->
+<section>
+  <h2>SecurityConfig — la cadena de filtros</h2>
+  <div class="grid-code-explain">
+    <div>
+<pre><code class="language-java" data-trim data-line-numbers="|4|5|7|8|10|14-15">@Bean
+public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwt) throws Exception {
+  http
+    .csrf(csrf -> csrf.disable())
+    .sessionManagement(s -> s.sessionCreationPolicy(STATELESS))
+    .authorizeHttpRequests(auth -> auth
+        .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+        .anyRequest().authenticated()
+    )
+    .addFilterBefore(jwt, UsernamePasswordAuthenticationFilter.class);
+  return http.build();
+}
+@Bean
+public PasswordEncoder passwordEncoder() {
+  return new BCryptPasswordEncoder();
+}</code></pre>
+    </div>
+    <div class="explain">
+      <h4>Qué hace cada parte</h4>
+      <ul>
+        <li><code>csrf().disable()</code>: la API es stateless, no usa cookies de sesión.</li>
+        <li><code>STATELESS</code>: Spring no crea <code>HttpSession</code>; cada request se autentica de cero con el token.</li>
+        <li><code>permitAll()</code>: deja pasar sin autenticación los endpoints públicos (auth + Swagger).</li>
+        <li><code>anyRequest().authenticated()</code>: todo lo demás exige token válido.</li>
+        <li><code>addFilterBefore</code>: nuestro filtro JWT corre <strong>antes</strong> del filtro nativo de username/password.</li>
+        <li><code>BCryptPasswordEncoder</code>: hashea con BCrypt (algoritmo lento por diseño = resistente a fuerza bruta).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 13. JWT SERVICE ================== -->
+<section>
+  <h2>JwtService — emisión y validación</h2>
+  <div class="grid-code-explain">
+    <div>
+<pre><code class="language-java" data-trim data-line-numbers="|1-9|7|11-14|16-19">public String generateToken(UserDetails user, String role) {
+  return Jwts.builder()
+      .subject(user.getUsername())
+      .claim("role", role)
+      .issuedAt(new Date())
+      .expiration(new Date(System.currentTimeMillis() + expirationMs))
+      .signWith(getSigningKey())
+      .compact();
+}
+
+public String extractEmail(String token) {
+  return Jwts.parser().verifyWith(getSigningKey()).build()
+      .parseSignedClaims(token).getPayload().getSubject();
+}
+
+public boolean isValid(String token, UserDetails user) {
+  String email = extractEmail(token);
+  return email.equals(user.getUsername()) &amp;&amp; !isExpired(token);
+}</code></pre>
+    </div>
+    <div class="explain">
+      <h4>Qué hace cada parte</h4>
+      <ul>
+        <li><code>generateToken</code>: arma el JWT poniendo el email como <code>sub</code>, el rol como claim custom, fechas de emisión y expiración, y lo firma con la llave secreta.</li>
+        <li><code>signWith</code>: aplica HMAC-SHA256 con el secret. Garantiza que nadie pueda alterar el token sin invalidar la firma.</li>
+        <li><code>extractEmail</code>: parsea el token, <strong>verifica la firma</strong> y devuelve el subject. Si la firma es inválida, lanza excepción.</li>
+        <li><code>isValid</code>: dos condiciones: el email del token coincide con el usuario cargado, y no está expirado.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 14. JWT FILTER ================== -->
+<section>
+  <h2>JwtAuthenticationFilter</h2>
+  <div class="grid-code-explain">
+    <div>
+<pre><code class="language-java" data-trim data-line-numbers="|1-5|6|7|10-11|12-14|17">String header = request.getHeader("Authorization");
+if (header == null || !header.startsWith("Bearer ")) {
+    filterChain.doFilter(request, response);
+    return;
+}
+String token = header.substring(7);
+String email = jwtService.extractEmail(token);
+
+if (email != null &amp;&amp; SecurityContextHolder.getContext().getAuthentication() == null) {
+    UserDetails user = userDetailsService.loadUserByUsername(email);
+    if (jwtService.isValid(token, user)) {
+        var auth = new UsernamePasswordAuthenticationToken(
+            user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+}
+filterChain.doFilter(request, response);</code></pre>
+    </div>
+    <div class="explain">
+      <h4>Qué hace cada parte</h4>
+      <ul>
+        <li>Lee el header <code>Authorization</code>. Si no viene o no empieza con <code>Bearer </code>, deja pasar sin autenticar.</li>
+        <li><code>substring(7)</code>: corta el prefijo <code>Bearer </code> y se queda con el token puro.</li>
+        <li>Extrae el email del token (verifica firma de paso).</li>
+        <li>Carga el usuario desde BD y valida que el token le corresponde y no expiró.</li>
+        <li>Crea el objeto <code>Authentication</code> y lo guarda en <code>SecurityContextHolder</code> — esto deja al usuario "logueado" para este request.</li>
+        <li>Sigue la cadena: el siguiente filtro decide si el endpoint requiere autenticación.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 15. AUTORIZACION ================== -->
+<section>
+  <h2>Autorización por endpoints</h2>
+  <p style="font-size:0.78em">Dos estilos, ambos válidos. Se pueden combinar.</p>
+  <div class="grid-code-explain">
+    <div>
+      <h3 style="font-size:0.8em">1. Centralizado en SecurityConfig</h3>
+<pre><code class="language-java" data-trim>.authorizeHttpRequests(auth -> auth
+    .requestMatchers("/api/auth/**").permitAll()
+    .requestMatchers("/api/admin/**").hasRole("ADMIN")
+    .requestMatchers(HttpMethod.POST, "/api/bill-payments")
+        .hasAnyRole("CUSTOMER","ADMIN")
+    .anyRequest().authenticated())</code></pre>
+      <h3 style="font-size:0.8em; margin-top:0.5em">2. Anotaciones por método</h3>
+<pre><code class="language-java" data-trim>@PreAuthorize("hasRole('ADMIN')")
+@DeleteMapping("/{id}")
+public void delete(@PathVariable Long id) { ... }</code></pre>
+    </div>
+    <div class="explain">
+      <h4>Cuándo usar cada uno</h4>
+      <ul>
+        <li><strong>Centralizado</strong>: cuando la regla es por URL completa (todos los <code>/api/admin/**</code>). Mantiene una sola vista de la seguridad.</li>
+        <li><strong>Anotación</strong>: cuando depende de la <strong>lógica del método</strong> (ej: "sólo el dueño del recurso o un admin"). Necesita <code>@EnableMethodSecurity</code>.</li>
+        <li><code>hasRole("ADMIN")</code> internamente busca la autoridad <code>ROLE_ADMIN</code> — por eso el <code>UserDetailsService</code> agrega el prefijo.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 16. LOGOUT - PROBLEMA ================== -->
+<section>
+  <h2>Logout: el problema con JWT</h2>
+  <blockquote>
+    Un JWT firmado es válido hasta que <code>exp</code> pasa, <strong>aunque el usuario haya cerrado sesión</strong>.
+    El servidor no guarda registro de los tokens emitidos.
+  </blockquote>
+  <p style="font-size:0.78em">Imagina este escenario:</p>
+  <ol style="font-size:0.78em">
+    <li>Ana se loguea desde un cibercafé. Recibe un token con <code>exp</code> en 60 minutos.</li>
+    <li>Ana hace click en "Cerrar sesión" y se va.</li>
+    <li>Otra persona toma la PC. Si ese token fue robado del <code>localStorage</code>, <strong>aún funciona 59 minutos más</strong>.</li>
+  </ol>
+  <p style="font-size:0.78em">Necesitamos una forma de <strong>invalidar el token antes de que expire naturalmente</strong>.</p>
+</section>
+
+<!-- ================== 17. LOGOUT - ESTRATEGIA ELEGIDA ================== -->
+<section>
+  <h2>Estrategia elegida: Refresh Tokens</h2>
+  <p style="font-size:0.78em">Es el estándar de la industria (OAuth2, Auth0, AWS Cognito). Dos tokens trabajando en equipo:</p>
+  <div class="strategy-row">
+    <div class="num">1</div>
+    <div>
+      <h4>Access Token (JWT corto)</h4>
+      <p>Vive <strong>15 minutos</strong>. Viaja en cada request en <code>Authorization: Bearer ...</code>. Stateless: el servidor no lo guarda. Si se roba, sólo es útil 15 min.</p>
+    </div>
+  </div>
+  <div class="strategy-row">
+    <div class="num">2</div>
+    <div>
+      <h4>Refresh Token (UUID en BD)</h4>
+      <p>Vive <strong>7 días</strong>. Se guarda en la tabla <code>refresh_tokens</code>. Sirve para pedir un nuevo access token sin reingresar credenciales. Se revoca en logout.</p>
+    </div>
+  </div>
+  <div class="strategy-row">
+    <div class="num">3</div>
+    <div>
+      <h4>Logout</h4>
+      <p>Marca el refresh token como <code>revoked = true</code>. El access expira solo en menos de 15 min. <strong>Sin blacklist, sin Redis.</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 18. LOGOUT - FLUJO ================== -->
+<section>
+  <h2>Flujo completo con refresh tokens</h2>
+  <div class="flow vertical">
+    <div class="row"><span class="pill">1</span> <code>POST /api/auth/login</code> → <code>{ accessToken (15min), refreshToken (7d) }</code></div>
+    <div class="row"><span class="pill">2</span> Cliente llama endpoints con <code>Authorization: Bearer &lt;accessToken&gt;</code></div>
+    <div class="row"><span class="pill">3</span> A los 15 min el access expira → <code>401</code></div>
+    <div class="row"><span class="pill">4</span> Cliente llama <code>POST /api/auth/refresh</code> con el refresh token</div>
+    <div class="row"><span class="pill">5</span> Backend valida en BD que el refresh existe, no expiró y no está revocado</div>
+    <div class="row"><span class="pill">6</span> Backend emite nuevo access token (refresh sigue igual)</div>
+    <div class="row"><span class="pill">7</span> <code>POST /api/auth/logout</code> con el refresh → marca <code>revoked = true</code></div>
+    <div class="row"><span class="pill">8</span> Cliente borra ambos tokens de su almacenamiento</div>
+  </div>
+</section>
+
+<!-- ================== 19. LOGOUT - IMPLEMENTACION ================== -->
+<section>
+  <h2>Implementación: entidad y servicio</h2>
+  <div class="grid-code-explain">
+    <div>
+<pre><code class="language-java" data-trim data-line-numbers="|1-8|12-19|21-27|29-34">@Entity @Table(name = "refresh_tokens")
+public class RefreshToken {
+  @Id @GeneratedValue Long id;
+  @Column(unique = true) String token;     // UUID
+  @ManyToOne User user;
+  LocalDateTime expiresAt;
+  boolean revoked;
+}
+
+@Service
+public class RefreshTokenService {
+  public RefreshToken create(User user) {
+    RefreshToken rt = new RefreshToken();
+    rt.setToken(UUID.randomUUID().toString());
+    rt.setUser(user);
+    rt.setExpiresAt(LocalDateTime.now().plusDays(7));
+    rt.setRevoked(false);
+    return repo.save(rt);
+  }
+
+  public RefreshToken validate(String token) {
+    RefreshToken rt = repo.findByToken(token)
+        .orElseThrow(() -> new InvalidTokenException());
+    if (rt.isRevoked() || rt.getExpiresAt().isBefore(now()))
+        throw new InvalidTokenException();
+    return rt;
+  }
+
+  public void revoke(String token) {
+    repo.findByToken(token).ifPresent(rt -> {
+      rt.setRevoked(true);
+      repo.save(rt);
+    });
+  }
+}</code></pre>
+    </div>
+    <div class="explain">
+      <h4>Qué hace cada parte</h4>
+      <ul>
+        <li><code>RefreshToken</code>: entidad JPA con UUID único, dueño, expiración y flag revoked.</li>
+        <li><code>create()</code>: se llama al hacer login. Emite un UUID aleatorio con 7 días de vida.</li>
+        <li><code>validate()</code>: tres condiciones — existe en BD, no expiró, no fue revocado. Si falla, <code>401</code>.</li>
+        <li><code>revoke()</code>: el endpoint <code>logout</code> lo invoca. Marca <code>revoked = true</code> en BD.</li>
+        <li>Para "logout en todos los dispositivos": <code>repo.revokeAllByUserId(userId)</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 20. LOGOUT - ENDPOINTS ================== -->
+<section>
+  <h2>Implementación: endpoints</h2>
+  <div class="grid-code-explain">
+    <div>
+<pre><code class="language-java" data-trim data-line-numbers="|2-10|12-16|18-20|23-25">// AuthService
+public AuthResponse login(LoginRequest req) {
+  authManager.authenticate(
+    new UsernamePasswordAuthenticationToken(
+      req.email(), req.password()));
+  User user = userRepo.findByEmail(req.email()).orElseThrow();
+  String access = jwtService.generateToken(user);
+  RefreshToken refresh = refreshTokenService.create(user);
+  return new AuthResponse(access, refresh.getToken());
+}
+
+public AuthResponse refresh(String refreshToken) {
+  RefreshToken rt = refreshTokenService.validate(refreshToken);
+  String newAccess = jwtService.generateToken(rt.getUser());
+  return new AuthResponse(newAccess, refreshToken);
+}
+
+public void logout(String refreshToken) {
+  refreshTokenService.revoke(refreshToken);
+}
+
+// AuthController
+@PostMapping("/login")    public AuthResponse login(...)    { ... }
+@PostMapping("/refresh")  public AuthResponse refresh(...)  { ... }
+@PostMapping("/logout")   public void logout(...)            { ... }</code></pre>
+    </div>
+    <div class="explain">
+      <h4>Qué hace cada parte</h4>
+      <ul>
+        <li><code>login</code>: emite <strong>ambos</strong> tokens. El access dura 15 min, el refresh 7 días.</li>
+        <li><code>refresh</code>: intercambia un refresh válido por un nuevo access. El refresh <strong>no se renueva</strong> (rotación opcional).</li>
+        <li><code>logout</code>: revoca el refresh. El access seguirá funcionando hasta su <code>exp</code>, pero ya no se puede renovar.</li>
+        <li>Tres endpoints, todos en <code>/api/auth/**</code> (públicos, no requieren JWT válido para llamarlos).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 21. CONFIGURACION DE DURACION ================== -->
+<section>
+  <h2>Configuración: duración de los tokens</h2>
+  <p style="font-size:0.78em">¿De dónde sale el "15 min" y "7 días"? De variables de entorno en <strong>milisegundos</strong>.</p>
+  <div class="grid-2">
+    <div>
+      <h3 style="font-size:0.85em">En el <code>.env</code></h3>
+<pre><code class="language-bash" data-trim>JWT_EXPIRATION_MS=900000
+JWT_REFRESH_EXPIRATION_MS=604800000</code></pre>
+      <p style="font-size:0.7em; margin-top:0.4em"><strong>Cálculo:</strong> <code>días × 24 × 60 × 60 × 1000</code></p>
+      <ul style="font-size:0.68em; margin-top:0.3em">
+        <li>900.000 ms = 15 min (access)</li>
+        <li>604.800.000 ms = 7 días (refresh)</li>
+      </ul>
+      <p style="font-size:0.65em; color:#6b7280; margin-top:0.4em">El env se inyecta vía <code>@Value</code> en <code>RefreshTokenService</code>. Cambiás el número, reiniciás la app — sin recompilar.</p>
+    </div>
+    <div>
+      <h3 style="font-size:0.85em">Recomendaciones por contexto</h3>
+      <table style="font-size:0.6em">
+        <thead><tr><th>Tipo de app</th><th>Access</th><th>Refresh</th></tr></thead>
+        <tbody>
+          <tr><td>Banca / fintech</td><td>5 min</td><td>1 día</td></tr>
+          <tr><td><strong>PagoYa (académico)</strong></td><td><strong>15 min</strong></td><td><strong>7 días</strong></td></tr>
+          <tr><td>Red social / mobile</td><td>1 hora</td><td>30-90 días</td></tr>
+          <tr><td>Dashboard interno</td><td>30 min</td><td>8 horas</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:0.65em; margin-top:0.5em">⚖️ <strong>Más corto</strong> = más seguro si el token se roba.<br>
+      <strong>Más largo</strong> = mejor UX, menos llamadas a <code>/refresh</code>, más exposición.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 21b. EQUIVALENCIAS DE TIEMPO ================== -->
+<section>
+  <h2>Tabla de equivalencias: tiempo → milisegundos</h2>
+  <p style="font-size:0.75em">Para que no calcules a mano, acá tenés los valores listos para pegar en el <code>.env</code>:</p>
+  <div class="grid-2">
+    <div>
+      <h3 style="font-size:0.85em">Para el access token (corto)</h3>
+      <table style="font-size:0.65em">
+        <thead><tr><th>Duración</th><th>Valor en ms</th><th>Cálculo</th></tr></thead>
+        <tbody>
+          <tr><td>1 minuto</td><td><code>60000</code></td><td><code>60 × 1000</code></td></tr>
+          <tr><td>5 minutos</td><td><code>300000</code></td><td><code>5 × 60 × 1000</code></td></tr>
+          <tr><td><strong>15 minutos</strong></td><td><code><strong>900000</strong></code></td><td><code>15 × 60 × 1000</code></td></tr>
+          <tr><td>30 minutos</td><td><code>1800000</code></td><td><code>30 × 60 × 1000</code></td></tr>
+          <tr><td>1 hora</td><td><code>3600000</code></td><td><code>60 × 60 × 1000</code></td></tr>
+          <tr><td>2 horas</td><td><code>7200000</code></td><td><code>2 × 3600000</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3 style="font-size:0.85em">Para el refresh token (largo)</h3>
+      <table style="font-size:0.65em">
+        <thead><tr><th>Duración</th><th>Valor en ms</th><th>Cálculo</th></tr></thead>
+        <tbody>
+          <tr><td>1 hora</td><td><code>3600000</code></td><td><code>60 × 60 × 1000</code></td></tr>
+          <tr><td>8 horas</td><td><code>28800000</code></td><td><code>8 × 3600000</code></td></tr>
+          <tr><td>1 día</td><td><code>86400000</code></td><td><code>24 × 3600000</code></td></tr>
+          <tr><td><strong>7 días</strong></td><td><code><strong>604800000</strong></code></td><td><code>7 × 86400000</code></td></tr>
+          <tr><td>30 días</td><td><code>2592000000</code></td><td><code>30 × 86400000</code></td></tr>
+          <tr><td>90 días</td><td><code>7776000000</code></td><td><code>90 × 86400000</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <blockquote style="margin-top:0.4em; font-size:0.7em">
+    💡 <strong>Fórmula maestra:</strong> <code>ms = días × 24 × 60 × 60 × 1000</code> &nbsp;|&nbsp; <code>ms = horas × 60 × 60 × 1000</code> &nbsp;|&nbsp; <code>ms = minutos × 60 × 1000</code>. Multiplicá por 1000 al final siempre porque el sistema trabaja en ms, no en segundos.
+  </blockquote>
+</section>
+
+<!-- ================== 22. CUANDO SE INVOCA REFRESH ================== -->
+<section>
+  <h2>¿Cuándo se invoca <code>/refresh</code> desde el frontend?</h2>
+  <p style="font-size:0.78em">Confunde a todos: los <strong>7 días</strong> son la vida del refresh, NO la frecuencia de llamada. <code>/refresh</code> se invoca <strong>cada ~15 min</strong> mientras el usuario use la app.</p>
+  <div class="grid-code-explain">
+    <div>
+<pre><code class="language-javascript" data-trim>// Interceptor Axios: si recibe 401, hace refresh y reintenta
+axios.interceptors.response.use(
+  res => res,
+  async error => {
+    const original = error.config;
+    if (error.response?.status === 401 &amp;&amp; !original._retry) {
+      original._retry = true;
+      try {
+        const { data } = await axios.post('/api/auth/refresh', {
+          refreshToken: localStorage.getItem('refresh')
+        });
+        // Guardar los DOS nuevos (rotation)
+        localStorage.setItem('jwt', data.accessToken);
+        localStorage.setItem('refresh', data.refreshToken);
+        original.headers.Authorization = `Bearer ${data.accessToken}`;
+        return axios(original);
+      } catch {
+        localStorage.clear();
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);</code></pre>
+    </div>
+    <div class="explain">
+      <h4>El flujo, paso a paso</h4>
+      <ul>
+        <li>Usuario hace <strong>login</strong> → guarda ambos tokens.</li>
+        <li>Cada request lleva <code>Authorization: Bearer &lt;accessToken&gt;</code>.</li>
+        <li>A los 15 min, el access expira → API responde <strong>401</strong>.</li>
+        <li>El interceptor atrapa el 401 y llama <code>/refresh</code> con el refresh token.</li>
+        <li>Recibe access nuevo + refresh nuevo (por rotation), los guarda y <strong>reintenta</strong> el request original.</li>
+        <li>Si el refresh también falla (logout o pasaron 7 días), redirige a <code>/login</code>.</li>
+      </ul>
+    </div>
+  </div>
+  <p style="font-size:0.7em; margin-top:0.4em">Los <strong>7 días son el techo de inactividad</strong>: si abrís la app al día 8 sin haber usado nada, te pide login. Si la usás cada día, los tokens se renuevan transparente.</p>
+</section>
+
+<!-- ================== 23. BUENAS PRACTICAS ================== -->
+<section>
+  <h2>Buenas prácticas</h2>
+  <ul>
+    <li><strong>BCrypt</strong> para passwords. Jamás texto plano ni MD5/SHA1.</li>
+    <li><strong>Secret JWT en variable de entorno</strong> (<code>JWT_SECRET</code>), nunca en el código.</li>
+    <li><strong>Expiración corta</strong> (15-60 min) + <em>refresh token</em> separado para sesiones largas.</li>
+    <li><strong>HTTPS siempre</strong> en producción: el token viaja en cada request.</li>
+    <li><code>HS256</code> con secret ≥ 256 bits, o <code>RS256</code> con par de llaves.</li>
+    <li>No metas datos sensibles en el payload (es público).</li>
+    <li>Endpoints públicos explícitos: <code>permitAll()</code> sólo donde corresponde.</li>
+    <li><code>SessionCreationPolicy.STATELESS</code> en APIs REST.</li>
+    <li><strong>Implementa logout real</strong> con refresh tokens (revocar en BD).</li>
+  </ul>
+</section>
+
+<!-- ================== 24. ERRORES COMUNES ================== -->
+<section>
+  <h2>Errores comunes</h2>
+  <ul>
+    <li><span class="pill red">401</span> sin endpoints públicos: olvidar <code>permitAll()</code> en <code>/api/auth/**</code> y Swagger.</li>
+    <li><span class="pill red">403</span> después de loguear: el filtro JWT no se ejecuta antes del filtro de auth.</li>
+    <li><strong>Secret hardcoded</strong> en <code>SecurityConfig</code> commiteado al repo.</li>
+    <li>Tokens <strong>sin expiración</strong>: si se roban, son válidos para siempre.</li>
+    <li>Token en <strong>cookie no <code>HttpOnly</code></strong>: vulnerable a XSS.</li>
+    <li>Olvidar <code>@EnableMethodSecurity</code> y luego sorprenderse de que <code>@PreAuthorize</code> no hace nada.</li>
+    <li>"Implementar logout" borrando el token sólo del cliente: el token sigue siendo válido en el servidor.</li>
+  </ul>
+</section>
+
+<!-- ================== 25. EN PAGOYA ================== -->
+<section>
+  <h2>Aplicado a PagoYa</h2>
+  <p style="font-size:0.78em">Lo que vamos a transformar de la <strong>semana 05</strong>:</p>
+  <ul>
+    <li>El <code>POST /api/auth/register</code> ya existe — añadiremos <strong>hash de password</strong> con BCrypt.</li>
+    <li>Crearemos <code>POST /api/auth/login</code> que devuelve <strong>access + refresh tokens</strong>.</li>
+    <li>Crearemos <code>POST /api/auth/refresh</code> para renovar el access sin reingresar credenciales.</li>
+    <li>Crearemos <code>POST /api/auth/logout</code> que revoca el refresh token en BD.</li>
+    <li>Todos los endpoints de <code>customer</code>, <code>account</code>, <code>billing</code>, <code>transfer</code> quedarán <strong>autenticados</strong>.</li>
+    <li>Endpoints administrativos quedarán <strong>sólo para ADMIN</strong>.</li>
+    <li>Swagger UI seguirá público para facilitar el testing.</li>
+  </ul>
+  <blockquote>Continuamos sobre el mismo proyecto. <strong>No empieces de cero</strong>.</blockquote>
+</section>
+
+<!-- ================== 22. PROXIMOS PASOS ================== -->
+<section>
+  <h2>Próximos pasos</h2>
+  <ol style="font-size:0.85em">
+    <li>Continúa con la guía práctica <span class="pill">Teoria 06-SPRING-SECURITY-JWT</span> para la implementación paso a paso.</li>
+    <li>Confirma que el proyecto de la <strong>semana 05</strong> arranca y la BD está poblada (<code>data.sql</code>).</li>
+    <li>Crea la rama <span class="pill">feature/security-jwt</span> desde <code>develop</code>.</li>
+    <li>Sigue la guía paso a paso: dependencias → modelo → service → filtro → config.</li>
+    <li>Prueba en Postman: <code>register</code> → <code>login</code> → endpoint protegido → <code>refresh</code> → <code>logout</code>.</li>
+    <li>Abre el Pull Request a <code>develop</code>.</li>
+  </ol>
+</section>
+
+<!-- ================== 23. REFERENCIAS ================== -->
+<section>
+  <h2>Referencias</h2>
+  <ul>
+    <li><a href="https://spring.io/projects/spring-security">spring.io/projects/spring-security</a> — sitio oficial</li>
+    <li><a href="https://docs.spring.io/spring-security/reference/">docs.spring.io/spring-security/reference</a> — referencia técnica</li>
+    <li><a href="https://jwt.io/introduction">jwt.io/introduction</a> — qué es un JWT</li>
+    <li><a href="https://github.com/jwtk/jjwt">github.com/jwtk/jjwt</a> — librería que usaremos</li>
+    <li><a href="https://datatracker.ietf.org/doc/html/rfc7519">RFC 7519</a> — especificación JWT</li>
+    <li><a href="https://owasp.org/www-project-cheat-sheets/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet">OWASP JWT Cheat Sheet</a></li>
+  </ul>
+</section>
+
+<!-- ================== 24. CIERRE ================== -->
+<section class="title-slide">
+  <h1>¿Preguntas?</h1>
+  <p style="font-size:0.85em; color:#475569">
+    Continuamos con la guía paso a paso<br>
+    <span class="pill">Teoria 06-SPRING-SECURITY-JWT</span>
+  </p>
+  <p class="footer-note" style="margin-top:1.5em">
+    Henry Antonio Mendoza Puerta · PagoYa API · Semana 06
+  </p>
+</section>
+
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    controls: true,
+    progress: true,
+    width: 1280,
+    height: 800,
+    margin: 0.06,
+    minScale: 0.2,
+    maxScale: 1.5,
+    plugins: [ RevealHighlight, RevealNotes ]
+  });
+
+  // Sincroniza el bullet del panel "Que hace cada parte" con el fragmento
+  // de codigo resaltado. Cada vez que un fragmento aparece o desaparece,
+  // calcula el indice activo, marca el li correspondiente con .explain-active
+  // y opaca al resto agregando .has-active al contenedor .explain.
+  function syncExplainPanel() {
+    const slide = Reveal.getCurrentSlide();
+    if (!slide) return;
+    const explainPanel = slide.querySelector('.explain');
+    const explainLis = slide.querySelectorAll('.explain ul > li');
+    if (!explainLis.length) return;
+
+    // Buscar el fragmento visible con mayor data-fragment-index dentro del slide
+    const visibleFragments = slide.querySelectorAll('.fragment.visible');
+    let activeIndex = -1;
+    visibleFragments.forEach(f => {
+      const idx = parseInt(f.getAttribute('data-fragment-index') || '-1', 10);
+      if (idx > activeIndex) activeIndex = idx;
+    });
+
+    explainLis.forEach((li, i) => {
+      li.classList.toggle('explain-active', i === activeIndex);
+    });
+
+    // Activar el modo "hay un bullet seleccionado" para opacar el resto
+    if (explainPanel) {
+      explainPanel.classList.toggle('has-active', activeIndex >= 0);
+    }
+  }
+
+  Reveal.on('ready', syncExplainPanel);
+  Reveal.on('slidechanged', syncExplainPanel);
+  Reveal.on('fragmentshown', syncExplainPanel);
+  Reveal.on('fragmenthidden', syncExplainPanel);
+</script>
+</body>
+</html>
