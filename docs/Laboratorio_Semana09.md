@@ -1,4 +1,4 @@
-# Laboratorio
+# Laboratorio Semana 09
 
 ## Integración Angular con `pagoya-api`
 
@@ -11,7 +11,7 @@ Elaborado por: Henry Antonio Mendoza Puerta
 - [Sección 01: ¿Qué es Angular?](#sección-01-qué-es-angular)
 - [Sección 02: Preparar el backend (`pagoya-api`)](#sección-02-preparar-el-backend-pagoya-api)
 - [Sección 03: Crear el proyecto y la estructura](#sección-03-crear-el-proyecto-y-la-estructura)
-- [Sección 04: Generar los componentes de las interfaces de usuario](#sección-04-generar-los-componentes-de-las-interfaces de usuario)
+- [Sección 04: Generar los componentes de las interfaces de usuario](#sección-04-generar-los-componentes-de-las-interfaces-de-usuario)
 - [Sección 05: Configurar las rutas](#sección-05-configurar-las-rutas)
 - [Sección 06: Modelos](#sección-06-modelos)
 - [Sección 07: Service de transferencias](#sección-07-service-de-transferencias)
