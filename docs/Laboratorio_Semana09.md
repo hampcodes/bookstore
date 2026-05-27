@@ -14,11 +14,12 @@ Elaborado por: Henry Antonio Mendoza Puerta
 - [Sección 04: Generar los componentes de las interfaces de usuario](#sección-04-generar-los-componentes-de-las-interfaces-de-usuario)
 - [Sección 05: Configurar las rutas](#sección-05-configurar-las-rutas)
 - [Sección 06: Modelos](#sección-06-modelos)
-- [Sección 07: Service de transferencias](#sección-07-service-de-transferencias)
-- [Sección 08: Listado de transferencias](#sección-08-listado-de-transferencias)
-- [Sección 09: Formulario de transferencias](#sección-09-formulario-de-transferencias)
-- [Sección 10: Cuentas](#sección-10-cuentas)
-- [Sección 11: Resumen](#sección-11-resumen)
+- [Sección 07: Variables de entorno](#sección-07-variables-de-entorno)
+- [Sección 08: Service de transferencias](#sección-08-service-de-transferencias)
+- [Sección 09: Listado de transferencias](#sección-09-listado-de-transferencias)
+- [Sección 10: Formulario de transferencias](#sección-10-formulario-de-transferencias)
+- [Sección 11: Cuentas](#sección-11-cuentas)
+- [Sección 12: Resumen](#sección-12-resumen)
 
 ---
 
@@ -192,44 +193,49 @@ ng serve
 ### 3.2 Estructura objetivo
 
 ```text
-src/app/
-├── core/
-├── layouts/
-│   ├── main-layout/
-│   └── auth-layout/
-├── pages/
-│   ├── transfers/
-│   │   ├── list/
-│   │   ├── form/
-│   │   └── transfers.routes.ts
-│   └── accounts/
-│       ├── list/
-│       └── accounts.routes.ts
-├── services/
-│   ├── transfer.service.ts
-│   └── account.service.ts
-├── models/
-│   ├── page-response.ts
-│   ├── currency.ts
-│   ├── transfer-status.ts
-│   ├── transfer-request.ts
-│   ├── transfer-response.ts
-│   ├── account-status.ts
-│   ├── account-type.ts
-│   └── account-response.ts
-├── app.ts
-├── app.html
-├── app.config.ts
-└── app.routes.ts
+src/
+├── environments/
+│   ├── environment.ts
+│   └── environment.development.ts
+└── app/
+    ├── core/
+    ├── layouts/
+    │   ├── main-layout/
+    │   └── auth-layout/
+    ├── pages/
+    │   ├── transfers/
+    │   │   ├── list/
+    │   │   ├── form/
+    │   │   └── transfers.routes.ts
+    │   └── accounts/
+    │       ├── list/
+    │       └── accounts.routes.ts
+    ├── services/
+    │   ├── transfer.service.ts
+    │   └── account.service.ts
+    ├── models/
+    │   ├── page-response.ts
+    │   ├── currency.ts
+    │   ├── transfer-status.ts
+    │   ├── transfer-request.ts
+    │   ├── transfer-response.ts
+    │   ├── account-status.ts
+    │   ├── account-type.ts
+    │   └── account-response.ts
+    ├── app.ts
+    ├── app.html
+    ├── app.config.ts
+    └── app.routes.ts
 ```
 
-| Carpeta      | Para qué sirve                                                          |
-|--------------|-------------------------------------------------------------------------|
-| `core/`      | Servicios singleton (guards, interceptors).                             |
-| `layouts/`   | Envolturas visuales (privada, pública).                                 |
-| `pages/`     | Una carpeta por interfaz de usuario con subpáginas y archivo de rutas.             |
-| `services/`  | Llamadas al API, uno por dominio.                                       |
-| `models/`    | Interfaces y enums que replican los DTOs del backend.                   |
+| Carpeta          | Para qué sirve                                                          |
+|------------------|-------------------------------------------------------------------------|
+| `environments/`  | Variables por entorno (URLs del API, valores por defecto).              |
+| `core/`          | Servicios singleton (guards, interceptors).                             |
+| `layouts/`       | Envolturas visuales (privada, pública).                                 |
+| `pages/`         | Una carpeta por interfaz de usuario con subpáginas y archivo de rutas.  |
+| `services/`      | Llamadas al API, uno por dominio.                                       |
+| `models/`        | Interfaces y enums que replican los DTOs del backend.                   |
 
 ### 3.3 Crear carpetas y los layouts
 
@@ -342,7 +348,7 @@ export class AuthLayout {}
 
 ## Sección 04: Generar los componentes de las interfaces de usuario
 
-Antes de tocar las rutas, generamos los componentes vacíos de cada interfaz de usuario. En este paso solo los **creamos**; el contenido (consumo del service, formulario, etc.) se completa en los pasos 8, 9 y 10.
+Antes de tocar las rutas, generamos los componentes vacíos de cada interfaz de usuario. En este paso solo los **creamos**; el contenido (consumo del service, formulario, etc.) se completa en los pasos 9, 10 y 11.
 
 ```bash
 ng g c pages/transfers/list --skip-tests
@@ -356,9 +362,9 @@ Esto genera:
 - `src/app/pages/transfers/form/` con `form.ts`, `form.html`, `form.css`.
 - `src/app/pages/accounts/list/` con `list.ts`, `list.html`, `list.css`.
 
-Las carpetas `pages/transfers/` y `pages/accounts/` las crea automáticamente el CLI al generar el primer componente de cada interfaz de usuario.
+Las carpetas `pages/transfers/` y `pages/accounts/` las crea automáticamente el CLI al generar el primer componente de cada interfaz.
 
-> Los componentes quedan con el HTML por defecto que pone el CLI (algo como `<p>list works!</p>`). Es lo esperado: en el paso 5 las rutas los apuntan, y en los pasos 8–10 los llenamos con la lógica real.
+> Los componentes quedan con el HTML por defecto que pone el CLI (algo como `<p>list works!</p>`). Es lo esperado: en el paso 5 las rutas los apuntan, y en los pasos 9–11 los llenamos con la lógica real.
 
 [↑ Volver al índice](#tabla-de-contenidos)
 
@@ -368,9 +374,9 @@ Las carpetas `pages/transfers/` y `pages/accounts/` las crea automáticamente el
 
 Configuramos el router con `MainLayout` envolviendo a todas las interfaces de usuario y **rutas hijas con lazy load** por área.
 
-### 5.1 Archivo de rutas de cada interfaz de usuario
+### 5.1 Archivo de rutas de cada interfaz
 
-Los archivos `*.routes.ts` **no los genera el CLI**: los creamos a mano dentro de cada carpeta de área (las carpetas ya existen del paso 4). Cada archivo declara qué componente responde a cada path dentro de esa interfaz de usuario.
+Los archivos `*.routes.ts` **no los genera el CLI**: los creamos a mano dentro de cada carpeta de área (las carpetas ya existen del paso 4). Cada archivo declara qué componente responde a cada path.
 
 Crear **`src/app/pages/transfers/transfers.routes.ts`**:
 
@@ -433,17 +439,14 @@ Reemplazar **`src/app/app.html`**:
 
 **Probar en el navegador:** `http://localhost:4200` redirige a `/transfers`. Se ve la barra superior con menú **Transferencias / Cuentas** y, debajo, el HTML por defecto del componente `List` de transferencias. Clic en **Cuentas** → URL cambia a `/accounts` y aparece el HTML por defecto del `List` de cuentas. No hay errores en la consola.
 
-| Concepto                  | Significado                                                                 |
-|---------------------------|-----------------------------------------------------------------------------|
-| `component: MainLayout`   | Envoltura común a todas las páginas hijas.                                  |
-| `children: [...]`         | Rutas que renderizan dentro del `router-outlet` del padre.                  |
-| `loadChildren: () => ...` | Carga un archivo `*.routes.ts` solo al navegar (lazy).                      |
-| `<router-outlet />`       | Hueco donde Angular monta el componente de la ruta activa.                  |
-| `RouterOutlet`            | Clase que se importa en el `imports` del componente para habilitar el outlet. |
-| `routerLink="..."`        | Atributo de un `<a>` para navegar a una ruta sin recargar la página.        |
-| `RouterLink`              | Clase que se importa para que `routerLink` funcione en el template.         |
-| `routerLinkActive="x"`    | Agrega la clase `x` al `<a>` cuando su ruta es la activa (útil para menús). |
-| `RouterLinkActive`        | Clase que se importa para que `routerLinkActive` funcione en el template.   |
+| Concepto | Significado |
+|---|---|
+| `component: MainLayout` | Envoltura común a todas las páginas hijas. |
+| `children: [...]` | Rutas que renderizan dentro del `router-outlet` del padre. |
+| `loadChildren: () => ...` | Carga un archivo `*.routes.ts` solo al navegar (lazy). |
+| `<router-outlet />` / `RouterOutlet` | Etiqueta del template que marca el lugar donde Angular renderiza el componente de la ruta activa. Para usarla, hay que importar `RouterOutlet` en el `imports` del componente. |
+| `routerLink="..."` / `RouterLink` | Atributo que convierte un `<a>` en un link del router: navega a la ruta indicada sin recargar la página. Para usarlo, hay que importar `RouterLink`. |
+| `routerLinkActive="x"` / `RouterLinkActive` | Atributo que aplica la clase CSS `x` al `<a>` cuando su `routerLink` coincide con la URL actual (típicamente se usa para resaltar el ítem activo del menú). Para usarlo, hay que importar `RouterLinkActive`. |
 
 [↑ Volver al índice](#tabla-de-contenidos)
 
@@ -571,11 +574,60 @@ export interface AccountResponse {
 
 ---
 
-## Sección 07: Service de transferencias
+## Sección 07: Variables de entorno
 
-`TransferService` es la única capa que habla con el backend. Devuelve `Observable<T>`; el componente se encarga de suscribirse. Antes del service activamos `HttpClient` a nivel de aplicación.
+La URL base del backend y otros valores que cambian entre entornos (dev, qa, prod) no se hardcodean en el código. Van en archivos de **environment**: el build los reemplaza automáticamente según la configuración.
 
-### 7.1 Habilitar `HttpClient`
+### 7.1 Generar los archivos de entorno
+
+```bash
+ng generate environments
+```
+
+Crea:
+
+- `src/environments/environment.ts` — usado en **producción**.
+- `src/environments/environment.development.ts` — usado en **desarrollo** (`ng serve` lo aplica por defecto).
+
+### 7.2 Llenar `environment.development.ts`
+
+Reemplazar **`src/environments/environment.development.ts`**:
+
+```ts
+export const environment = {
+  production: false,
+  apiUrl: 'http://localhost:8080/api',
+  defaultAccount: '191-001',
+  defaultCustomerId: 1,
+};
+```
+
+`defaultAccount` y `defaultCustomerId` son valores de demo para esta sesión (no hay login todavía). Cuando se agregue autenticación, esos datos vendrán del usuario logueado.
+
+### 7.3 Llenar `environment.ts`
+
+Reemplazar **`src/environments/environment.ts`** (mismo shape, valores de producción cuando exista ese entorno; por ahora idéntico):
+
+```ts
+export const environment = {
+  production: true,
+  apiUrl: 'http://localhost:8080/api',
+  defaultAccount: '191-001',
+  defaultCustomerId: 1,
+};
+```
+
+Los services y componentes importan siempre desde `'../../environments/environment'`. El build elige cuál usar según la configuración (`development` vs producción).
+
+[↑ Volver al índice](#tabla-de-contenidos)
+
+---
+
+## Sección 08: Service de transferencias
+
+`TransferService` es la única capa que se comunica con el backend por HTTP. Devuelve `Observable<T>`; el componente se encarga de suscribirse. Antes activamos `HttpClient` a nivel de aplicación.
+
+### 8.1 Habilitar `HttpClient`
 
 Reemplazar **`src/app/app.config.ts`**:
 
@@ -594,50 +646,37 @@ export const appConfig: ApplicationConfig = {
 };
 ```
 
-### 7.2 Observable (transporte)
+> **¿Qué hace `provideZonelessChangeDetection()`?** Habilita la detección de cambios **sin `zone.js`**. Antes, Angular dependía de `zone.js` para interceptar APIs del navegador (`setTimeout`, eventos, `Promise`) y disparar el ciclo de detección automáticamente. En Angular 21 las apps nuevas vienen **zoneless por defecto**: la detección la disparan los signals, los eventos del template y el router. Resultado: bundles más chicos, menos trabajo de change detection, y un modelo más predecible.
 
-`HttpClient.get/post` devuelve `Observable<T>`: un stream que emite el valor cuando llega la respuesta. La petición se dispara solo al llamar `.subscribe(...)`.
+### 8.2 Observable (lo que devuelve `HttpClient`)
 
-```ts
-this.http.get<T>(url)              // Observable<T>
-    .subscribe(value => ...)       // dispara la request y procesa el resultado
-```
-
-Existen operadores (`map`, `tap`, `catchError`). Acá usamos `.pipe(map(...))` dentro del service para extraer `content` del paginado, y el `.subscribe(...)` se hace en el componente.
-
-### 7.3 Signal (estado local)
-
-Un Signal es un valor reactivo del cliente. Siempre tiene un valor presente y notifica a la vista al cambiar. Se lee como función.
+Un **Observable** representa una operación **asíncrona** que va a emitir un valor en el futuro. `HttpClient.get` y `HttpClient.post` siempre devuelven `Observable<T>`. La petición HTTP **no se dispara** hasta que alguien llama `.subscribe(...)` — esa es la naturaleza *lazy* del Observable.
 
 ```ts
-const counter = signal(0);
-counter();                  // 0
-counter.set(5);             // ahora 5
-counter.update(n => n + 1); // ahora 6
+// Devuelve Observable<T> — todavía no salió ninguna request.
+const respuesta$ = this.http.get<TransferResponse>(url);
+
+// Al suscribirse, se dispara la request y llega el callback con la data.
+respuesta$.subscribe(value => console.log(value));
 ```
 
-Variantes:
+Operadores útiles encadenados con `.pipe(...)`:
 
-- `signal<T>(initial)` → mutable.
-- `.asReadonly()` → solo lectura para exponer al exterior.
-- `computed(() => ...)` → derivado, recalcula automáticamente.
+| Operador     | Para qué                                                          |
+|--------------|-------------------------------------------------------------------|
+| `map(fn)`    | Transformar el valor emitido (ej. extraer un campo).              |
+| `tap(fn)`    | Ejecutar un side effect (logging, debug) sin alterar el stream.   |
+| `catchError` | Capturar un error y devolver un valor alternativo o re-lanzarlo.  |
 
-### 7.4 División Observable / Signal
+En este lab el service usa `pipe(map(page => page.content))` para que el componente reciba directamente el array, no el objeto paginado completo. El `.subscribe(...)` va **en el componente** (sección 9).
 
-| Capa             | Tecnología                | Para qué                                              |
-|------------------|---------------------------|-------------------------------------------------------|
-| Transporte       | `HttpClient` + Observable | Pedir y enviar datos al backend.                      |
-| Estado cliente   | Signal + computed         | Guardar la lista, derivar totales, alimentar la vista. |
-
-**Patrón:** el service devuelve `Observable<T>` (sin suscribirse) → el componente llama `.subscribe(...)` en `ngOnInit` → guarda el resultado en su signal → la vista reacciona.
-
-### 7.5 Generar el service
+### 8.3 Generar el service
 
 ```bash
 ng g s services/transfer --skip-tests
 ```
 
-### 7.6 Llenar el service
+### 8.4 Llenar el service
 
 **`src/app/services/transfer.service.ts`**:
 
@@ -645,6 +684,7 @@ ng g s services/transfer --skip-tests
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { PageResponse } from '../models/page-response';
 import { TransferRequest } from '../models/transfer-request';
 import { TransferResponse } from '../models/transfer-response';
@@ -652,12 +692,11 @@ import { TransferResponse } from '../models/transfer-response';
 @Injectable({ providedIn: 'root' })
 export class TransferService {
   private http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8080/api/transfers';
-  private readonly defaultAccount = '191-001';
+  private readonly baseUrl = `${environment.apiUrl}/transfers`;
 
-  list(): Observable<TransferResponse[]> {
+  listByAccount(accountNumber: string): Observable<TransferResponse[]> {
     return this.http
-      .get<PageResponse<TransferResponse>>(`${this.baseUrl}/account/${this.defaultAccount}`)
+      .get<PageResponse<TransferResponse>>(`${this.baseUrl}/account/${accountNumber}`)
       .pipe(map(page => page.content));
   }
 
@@ -671,11 +710,32 @@ export class TransferService {
 
 ---
 
-## Sección 08: Listado de transferencias
+## Sección 09: Listado de transferencias
 
-El componente `List` ya existe (paso 4). Acá lo llenamos para que consuma el service y aparezcan los datos del backend. Se usa el nuevo control de flujo nativo en el template.
+El componente `List` ya existe (paso 4). Acá lo llenamos para que consuma el service y aparezcan los datos del backend. Aparecen dos conceptos nuevos: **Signals** (el estado vive en el componente) y **control de flujo nativo** del template.
 
-### 8.1 Control de flujo nativo
+### 9.1 Signal (estado local del componente)
+
+Un **Signal** es un valor reactivo del cliente. Siempre tiene un valor presente y notifica a la vista cuando cambia. Se lee como función.
+
+```ts
+const counter = signal(0);
+counter();                  // lee → 0
+counter.set(5);             // reemplaza → 5
+counter.update(n => n + 1); // actualiza → 6
+```
+
+Variantes:
+
+| Forma                  | Para qué                                                              |
+|------------------------|-----------------------------------------------------------------------|
+| `signal<T>(initial)`   | Signal mutable.                                                       |
+| `.asReadonly()`        | Versión de solo lectura para exponer al exterior sin permitir mutación. |
+| `computed(() => ...)`  | Valor derivado que recalcula automáticamente al cambiar el signal del que depende. |
+
+En este componente guardamos la lista que llega del service en un signal privado, exponemos una versión `asReadonly()` y derivamos el total en PEN con `computed`.
+
+### 9.2 Control de flujo nativo
 
 Desde Angular 17 los templates usan bloques integrados.
 
@@ -688,13 +748,14 @@ Desde Angular 17 los templates usan bloques integrados.
 
 `track` es obligatorio en `@for`: da una clave estable para re-render eficiente.
 
-### 8.2 Llenar `list.ts`
+### 9.3 Llenar `list.ts`
 
 **`src/app/pages/transfers/list/list.ts`**:
 
 ```ts
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { environment } from '../../../../environments/environment';
 import { Currency } from '../../../models/currency';
 import { TransferResponse } from '../../../models/transfer-response';
 import { TransferService } from '../../../services/transfer.service';
@@ -718,12 +779,14 @@ export class List implements OnInit {
   );
 
   ngOnInit(): void {
-    this.service.list().subscribe(transfers => this._transfers.set(transfers));
+    this.service
+      .listByAccount(environment.defaultAccount)
+      .subscribe(transfers => this._transfers.set(transfers));
   }
 }
 ```
 
-### 8.3 Llenar `list.html`
+### 9.4 Llenar `list.html`
 
 **`src/app/pages/transfers/list/list.html`**:
 
@@ -745,7 +808,7 @@ export class List implements OnInit {
 }
 ```
 
-### 8.4 Llenar `list.css`
+### 9.5 Llenar `list.css`
 
 **`src/app/pages/transfers/list/list.css`**:
 
@@ -762,11 +825,11 @@ export class List implements OnInit {
 
 ---
 
-## Sección 09: Formulario de transferencias
+## Sección 10: Formulario de transferencias
 
 El componente `Form` ya existe (paso 4). Lo llenamos con un Reactive Form que valida los campos y hace `POST` al backend a través del service.
 
-### 9.1 Reactive Forms (no template-driven)
+### 10.1 Reactive Forms (no template-driven)
 
 | Aspecto         | Template-driven           | Reactive Forms ✅                                |
 |-----------------|---------------------------|--------------------------------------------------|
@@ -774,7 +837,7 @@ El componente `Form` ya existe (paso 4). Lo llenamos con un Reactive Form que va
 | Tipado          | Limitado                  | Fuerte (`FormBuilder.nonNullable.group({...})`)  |
 | Validaciones    | Atributos del template    | `Validators` en la clase                         |
 
-### 9.2 Validators más usados
+### 10.2 Validators más usados
 
 | Validator              | Uso                          |
 |------------------------|------------------------------|
@@ -789,7 +852,7 @@ Estados del control / form: `valid` / `invalid` / `touched` / `dirty` / `pending
 
 **Patrón usado:** el botón **Transferir** se deshabilita mientras `form.invalid` sea `true`.
 
-### 9.3 Validaciones aplicadas en este formulario
+### 10.3 Validaciones aplicadas en este formulario
 
 | Campo                  | Validación             | Por qué                                       |
 |------------------------|------------------------|-----------------------------------------------|
@@ -798,7 +861,7 @@ Estados del control / form: `valid` / `invalid` / `touched` / `dirty` / `pending
 | `amount`               | `required`, `min(1)`   | El backend exige monto ≥ 1.                   |
 | `currency`             | `required`             | El backend acepta solo `PEN/USD/EUR/GBP`.     |
 
-### 9.4 Llenar `form.ts`
+### 10.4 Llenar `form.ts`
 
 **`src/app/pages/transfers/form/form.ts`**:
 
@@ -838,7 +901,7 @@ export class Form {
 }
 ```
 
-### 9.5 Llenar `form.html`
+### 10.5 Llenar `form.html`
 
 **`src/app/pages/transfers/form/form.html`**:
 
@@ -871,7 +934,7 @@ export class Form {
 </form>
 ```
 
-### 9.6 Llenar `form.css`
+### 10.6 Llenar `form.css`
 
 **`src/app/pages/transfers/form/form.css`**:
 
@@ -895,17 +958,17 @@ button:disabled { background: #ccc; }
 
 ---
 
-## Sección 10: Cuentas
+## Sección 11: Cuentas
 
-Segunda interfaz de usuario. Mismo patrón que transferencias: generamos el service y completamos el componente que ya existe (paso 4). Sin formulario.
+Segunda interfaz de usuario. Mismo patrón: generamos el service y completamos el componente que ya existe (paso 4). Sin formulario.
 
-### 10.1 Generar el service
+### 11.1 Generar el service
 
 ```bash
 ng g s services/account --skip-tests
 ```
 
-### 10.2 Llenar `account.service.ts`
+### 11.2 Llenar `account.service.ts`
 
 **`src/app/services/account.service.ts`**:
 
@@ -913,29 +976,30 @@ ng g s services/account --skip-tests
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { AccountResponse } from '../models/account-response';
 import { PageResponse } from '../models/page-response';
 
 @Injectable({ providedIn: 'root' })
 export class AccountService {
   private http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8080/api/accounts';
-  private readonly defaultCustomerId = 1;
+  private readonly baseUrl = `${environment.apiUrl}/accounts`;
 
-  list(): Observable<AccountResponse[]> {
+  listByCustomer(customerId: number): Observable<AccountResponse[]> {
     return this.http
-      .get<PageResponse<AccountResponse>>(`${this.baseUrl}/customer/${this.defaultCustomerId}`)
+      .get<PageResponse<AccountResponse>>(`${this.baseUrl}/customer/${customerId}`)
       .pipe(map(page => page.content));
   }
 }
 ```
 
-### 10.3 Llenar `list.ts`
+### 11.3 Llenar `list.ts`
 
 **`src/app/pages/accounts/list/list.ts`**:
 
 ```ts
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { environment } from '../../../../environments/environment';
 import { AccountResponse } from '../../../models/account-response';
 import { AccountService } from '../../../services/account.service';
 
@@ -953,12 +1017,14 @@ export class List implements OnInit {
   accounts = this._accounts.asReadonly();
 
   ngOnInit(): void {
-    this.service.list().subscribe(accounts => this._accounts.set(accounts));
+    this.service
+      .listByCustomer(environment.defaultCustomerId)
+      .subscribe(accounts => this._accounts.set(accounts));
   }
 }
 ```
 
-### 10.4 Llenar `list.html`
+### 11.4 Llenar `list.html`
 
 **`src/app/pages/accounts/list/list.html`**:
 
@@ -979,7 +1045,7 @@ export class List implements OnInit {
 }
 ```
 
-### 10.5 Llenar `list.css`
+### 11.5 Llenar `list.css`
 
 **`src/app/pages/accounts/list/list.css`**:
 
@@ -996,31 +1062,32 @@ export class List implements OnInit {
 
 ---
 
-## Sección 11: Resumen
+## Sección 12: Resumen
 
 | Sección | Lo que aprendiste                                                          |
 |---------|----------------------------------------------------------------------------|
 | 02      | Backend: `CorsConfig` y abrir transferencias y cuentas sin token.          |
 | 03      | Estructura del proyecto, `main-layout` con menú, `auth-layout` listo.      |
-| 04      | Generar los componentes vacíos de cada interfaz de usuario con la CLI.                |
+| 04      | Generar los componentes vacíos con la CLI.                                 |
 | 05      | Rutas hijas con `loadChildren` y `MainLayout` envolviendo todo.            |
 | 06      | Modelos por CLI: `enum`, `interface`, `PageResponse` compartido.           |
-| 07      | Service que devuelve `Observable<T>` + `HttpClient` activo.                |
-| 08      | Componente con `inject`, `ngOnInit`, `subscribe` y control de flujo.       |
-| 09      | Reactive Forms tipados + `Validators` + botón controlado por `form.invalid`. |
-| 10      | Cuentas: mismo patrón sin tocar el router padre.                           |
+| 07      | Variables por entorno (`environment.development.ts` / `environment.ts`).   |
+| 08      | Service que devuelve `Observable<T>` + `HttpClient` activo.                |
+| 09      | Componente con `inject`, `ngOnInit`, `subscribe`, Signal y control de flujo. |
+| 10      | Reactive Forms tipados + `Validators` + botón controlado por `form.invalid`. |
+| 11      | Cuentas: mismo patrón sin tocar el router padre.                           |
 
 ### Regla clave
 
-> **Signals** → estado local del cliente, dentro del componente.
-> **Observables (HttpClient)** → conectividad con el API, dentro del service.
+> **Observable (HttpClient)** → conectividad con el API, en el service.
+> **Signal** → estado local del cliente, en el componente.
 
 ### Para agregar una interfaz de usuario nueva
 
 1. Generar componentes: `ng g c pages/<area>/<componente> --skip-tests`.
-2. Crear `pages/<area>/<area>.routes.ts` con los `path` de la interfaz de usuario.
+2. Crear `pages/<area>/<area>.routes.ts` con los `path` del área.
 3. Agregar un `loadChildren` en `app.routes.ts` apuntando a ese archivo.
-4. Generar el service: `ng g s services/<area> --skip-tests`. Devolver `Observable<T>`.
+4. Generar el service: `ng g s services/<area> --skip-tests`. Devolver `Observable<T>` usando `environment.apiUrl`.
 5. Llenar componentes con `inject`, `ngOnInit`, `subscribe` y signals.
 6. Agregar el enlace en el menú de `main-layout`.
 
