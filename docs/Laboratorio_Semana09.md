@@ -1,4 +1,4 @@
-# Laboratorio Semana 09
+# Integracion Frontend Backend
 
 ## Integración Angular con `pagoya-api`
 
