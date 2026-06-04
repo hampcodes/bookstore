@@ -90,6 +90,37 @@ funciones sin copiarlas y pegarlas.
 **Ojo:** al usar módulos, la página debe abrirse con un **servidor** (`http://`), no
 con doble clic (el navegador bloquea los `import` por seguridad si es `file://`).
 
+### 2.1 Funciones y métodos que usaremos
+
+Referencia rápida de las funciones que aparecen en el paso a paso (sección 4).
+
+| Función / método | Qué hace |
+|---|---|
+| `getElementById("id")` | Busca un elemento del HTML por su `id` |
+| `.value` | Lee o escribe el contenido de un input |
+| `.textContent` | Cambia el texto de un elemento |
+| `.innerHTML` | Cambia el HTML interno (llena la tabla) |
+| `.addEventListener("evt", fn)` | Ejecuta una función cuando ocurre un evento |
+| `evento.preventDefault()` | Evita que el form recargue la página |
+| `onclick="fn(id)"` | Llama a una función al hacer clic en el botón |
+| `.push(x)` | Agrega un elemento al final del arreglo |
+| `.map(fn)` | Crea un arreglo nuevo transformando cada ítem |
+| `.filter(fn)` | Crea un arreglo nuevo solo con los que cumplen |
+| `.find(fn)` | Devuelve el primer ítem que cumple |
+| `.join("")` | Une un arreglo en un solo string |
+| `.toLowerCase()` | Pasa el texto a minúsculas |
+| `.includes(t)` | ¿El texto contiene `t`? → true/false |
+| `.trim()` | Quita espacios al inicio y al final |
+| `.test(t)` (regex) | ¿El texto cumple un patrón? (valida correo) |
+| Template literals `` `${}` `` | Texto con variables para armar HTML |
+| `Number(v)` | Convierte texto a número |
+| `Date.now()` | Número único, lo usamos como `id` |
+| `confirm("...")` | Cuadro Aceptar/Cancelar → true/false |
+| `form.reset()` | Limpia el formulario |
+| `a \|\| b` | Usa `a`; si no tiene valor, usa `b` |
+| `JSON.stringify` / `JSON.parse` | Objeto ↔ texto (para localStorage) |
+| `localStorage.getItem` / `setItem` | Lee / guarda en el navegador |
+
 ---
 
 ## 3. Ejercicio
@@ -328,8 +359,8 @@ const mostrar = () => {
         <td>${emp.correo}</td>
         <td>S/ ${emp.salario}</td>
         <td>
-          <button data-editar="${emp.id}">Editar</button>
-          <button data-eliminar="${emp.id}">Eliminar</button>
+          <button onclick="editarEmpleado(${emp.id})">Editar</button>
+          <button onclick="eliminarEmpleado(${emp.id})">Eliminar</button>
         </td>
       </tr>`
     )
@@ -378,25 +409,27 @@ form.addEventListener("submit", (evento) => {
 });
 ```
 
-**d) Editar y eliminar (un solo listener en la tabla):**
-```js
-tabla.addEventListener("click", (evento) => {
-  const idEditar = evento.target.dataset.editar;
-  const idEliminar = evento.target.dataset.eliminar;
+**d) Editar y eliminar (una función para cada botón):**
 
-  if (idEditar) {
-    const emp = obtener("empleados").find((e) => e.id === Number(idEditar));
-    document.getElementById("nombre").value = emp.nombre;
-    document.getElementById("cargo").value = emp.cargo;
-    document.getElementById("correo").value = emp.correo;
-    document.getElementById("salario").value = emp.salario;
-    editandoId = emp.id;
-  }
-  if (idEliminar && confirm("¿Eliminar este empleado?")) {
-    guardar("empleados", obtener("empleados").filter((e) => e.id !== Number(idEliminar)));
+Cada botón llama a su función pasando el `id` directo (lo pusimos con `onclick` en el
+paso b). Como el archivo es un módulo, sus funciones no son visibles desde el HTML;
+por eso las colgamos de `window` para que el `onclick` las encuentre.
+```js
+window.editarEmpleado = (id) => {
+  const emp = obtener("empleados").find((e) => e.id === id);
+  document.getElementById("nombre").value = emp.nombre;
+  document.getElementById("cargo").value = emp.cargo;
+  document.getElementById("correo").value = emp.correo;
+  document.getElementById("salario").value = emp.salario;
+  editandoId = emp.id;
+};
+
+window.eliminarEmpleado = (id) => {
+  if (confirm("¿Eliminar este empleado?")) {
+    guardar("empleados", obtener("empleados").filter((e) => e.id !== id));
     mostrar();
   }
-});
+};
 ```
 
 **e) Buscar y arrancar:**
